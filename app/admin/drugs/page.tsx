@@ -46,7 +46,9 @@ export default async function AdminDrugsPage() {
                 <TableRow key={drug.id} className={!drug.is_active ? "opacity-60 bg-muted/20" : "hover:bg-muted/10 transition-colors"}>
                   <TableCell>
                     <div className="font-medium text-foreground">{drug.name}</div>
-                    <div className="text-xs text-muted-foreground">{drug.dose}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {drug.dose} {drug.manufacturer ? `• ${drug.manufacturer}` : ''}
+                    </div>
                   </TableCell>
                   <TableCell>{drug.category}</TableCell>
                   <TableCell className="capitalize">{drug.form}</TableCell>

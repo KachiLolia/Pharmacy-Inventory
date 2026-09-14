@@ -25,7 +25,8 @@ export function POSInterface({ drugs }: { drugs: DrugWithStock[] }) {
   const activeDrugs = drugs.filter(d => d.is_active)
   const searchResults = activeDrugs.filter(d => 
     d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    d.category.toLowerCase().includes(searchTerm.toLowerCase())
+    d.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (d.manufacturer && d.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()))
   ).slice(0, 5) // Limit to top 5 for quick adding
 
   const addToCart = (drug: DrugWithStock) => {
@@ -129,7 +130,12 @@ export function POSInterface({ drugs }: { drugs: DrugWithStock[] }) {
                 searchResults.map(drug => (
                   <div key={drug.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
                     <div>
-                      <p className="font-medium text-sm">{drug.name} <span className="text-muted-foreground font-normal">({drug.dose})</span></p>
+                      <p className="font-medium text-sm">
+                        {drug.name} 
+                        <span className="text-muted-foreground font-normal ml-1">
+                          ({drug.manufacturer ? `${drug.manufacturer} • ` : ''}{drug.dose})
+                        </span>
+                      </p>
                       <p className="text-xs text-muted-foreground mt-0.5">{drug.form} • Avail: <strong className="text-foreground">{drug.current_stock}</strong> units</p>
                     </div>
                     <Button size="sm" variant="secondary" onClick={() => addToCart(drug)} disabled={drug.current_stock <= 0}>
@@ -166,7 +172,10 @@ export function POSInterface({ drugs }: { drugs: DrugWithStock[] }) {
                   {cart.map(item => (
                     <div key={item.drug.id} className="flex items-center justify-between p-3 border rounded-lg bg-card">
                       <div className="flex-1">
-                        <p className="font-medium text-sm">{item.drug.name}</p>
+                        <p className="font-medium text-sm">
+                          {item.drug.name}
+                          {item.drug.manufacturer && <span className="text-muted-foreground font-normal ml-1">({item.drug.manufacturer})</span>}
+                        </p>
                         <div className="text-xs text-muted-foreground mt-1">
                           {item.drug.base_price !== undefined ? (
                             <span className="flex items-center gap-1.5">

@@ -30,7 +30,10 @@ export default async function StaffDrugsPage() {
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <h3 className="font-semibold text-lg text-foreground leading-tight">{drug.name}</h3>
-                  <p className="text-primary font-medium">{drug.dose}</p>
+                  <p className="text-primary font-medium">
+                    {drug.dose}
+                    {drug.manufacturer && <span className="text-muted-foreground font-normal ml-1.5">• {drug.manufacturer}</span>}
+                  </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <Badge variant="secondary" className="bg-muted text-muted-foreground capitalize font-medium">

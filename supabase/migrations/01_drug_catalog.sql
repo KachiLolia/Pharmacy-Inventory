@@ -10,6 +10,7 @@ CREATE TABLE public.drugs (
     dose TEXT NOT NULL,
     nafdac_number TEXT,
     category TEXT NOT NULL,
+    manufacturer TEXT, -- optional brand or manufacturer
     form TEXT NOT NULL, -- e.g., 'tablet', 'syrup'
     unit_type unit_type NOT NULL,
     pack_size INTEGER, -- only needed if unit_type is 'countable'

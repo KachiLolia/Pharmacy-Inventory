@@ -18,13 +18,14 @@ export function DrugFormDialog({ children, drug }: { children: React.ReactNode, 
   // Form State
   const [name, setName] = useState(drug?.name || '')
   const [dose, setDose] = useState(drug?.dose || '')
+  const [manufacturer, setManufacturer] = useState(drug?.manufacturer || '')
   const [category, setCategory] = useState(drug?.category || '')
   const [form, setForm] = useState(drug?.form || 'tablet')
   const [packSize, setPackSize] = useState(drug?.pack_size?.toString() || '')
   const [isActive, setIsActive] = useState(drug?.is_active ?? true)
   const [nafdac, setNafdac] = useState(drug?.nafdac_number || '')
-  const [lowStock, setLowStock] = useState(drug?.low_stock_threshold?.toString() || '')
-  const [expiryWarning, setExpiryWarning] = useState(drug?.expiry_warning_days?.toString() || '')
+  const [lowStock, setLowStock] = useState(drug?.low_stock_threshold?.toString() || '50')
+  const [expiryWarning, setExpiryWarning] = useState(drug?.expiry_warning_days?.toString() || '90')
 
   const isCountable = form === 'tablet' || form === 'capsule'
 
@@ -37,6 +38,7 @@ export function DrugFormDialog({ children, drug }: { children: React.ReactNode, 
         id: drug?.id,
         name,
         dose,
+        manufacturer,
         category,
         form,
         nafdac_number: nafdac,
@@ -82,9 +84,16 @@ export function DrugFormDialog({ children, drug }: { children: React.ReactNode, 
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2 col-span-2 sm:col-span-1">
+              <Label htmlFor="manufacturer">Manufacturer / Brand <span className="text-destructive">*</span></Label>
+              <Input id="manufacturer" required value={manufacturer} onChange={e => setManufacturer(e.target.value)} placeholder="e.g. Nature's Field" />
+            </div>
+            <div className="space-y-2 col-span-2 sm:col-span-1">
               <Label htmlFor="category">Category <span className="text-destructive">*</span></Label>
               <Input id="category" required value={category} onChange={e => setCategory(e.target.value)} placeholder="e.g. Analgesic" />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2 col-span-2 sm:col-span-1">
               <Label htmlFor="nafdac">NAFDAC Number</Label>
               <Input id="nafdac" value={nafdac} onChange={e => setNafdac(e.target.value)} placeholder="Optional" />
@@ -131,29 +140,29 @@ export function DrugFormDialog({ children, drug }: { children: React.ReactNode, 
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2 col-span-2 sm:col-span-1">
-              <Label htmlFor="lowStock">Low Stock Threshold</Label>
+              <Label htmlFor="lowStock">Low Stock Threshold <span className="text-destructive">*</span></Label>
               <Input 
                 id="lowStock" 
                 type="number" 
                 min="0"
+                required
                 value={lowStock} 
                 onChange={e => setLowStock(e.target.value)} 
-                placeholder="Optional override" 
               />
             </div>
             <div className="space-y-2 col-span-2 sm:col-span-1">
-              <Label htmlFor="expiryWarning">Expiry Warning (Days)</Label>
+              <Label htmlFor="expiryWarning">Expiry Warning (Days) <span className="text-destructive">*</span></Label>
               <Input 
                 id="expiryWarning" 
                 type="number" 
                 min="0"
+                required
                 value={expiryWarning} 
                 onChange={e => setExpiryWarning(e.target.value)} 
-                placeholder="Optional override" 
               />
             </div>
             <p className="col-span-2 text-xs text-muted-foreground leading-relaxed">
-              Optional overrides. If left blank, these fall back to the global defaults set in Settings.
+              These set the thresholds for when this specific drug will trigger low stock or expiring soon alerts.
             </p>
           </div>
 

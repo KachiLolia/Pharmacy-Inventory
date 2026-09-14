@@ -18,47 +18,28 @@ const globalAny = globalThis as { mockBatches?: Batch[] }
 if (!globalAny.mockBatches) {
   // Let's seed some batches for our mock drugs (Paracetamol ID: '1', Amoxicillin ID: '2')
   globalAny.mockBatches = [
-    {
-      id: 'batch-1',
-      drug_id: '1', // Paracetamol
-      batch_number: 'PAR-001',
-      quantity_received: 5, // 5 packs of 100
-      quantity_remaining: 5,
-      reserved_quantity: 0,
-      cost_price_per_unit: 1000.00, // Cost per pack
-      selling_price_per_unit: 1500.00, // Selling price per pack
-      manufacturing_date: '2023-01-01',
-      expiry_date: '2027-01-01',
-      date_received: new Date().toISOString(),
-      received_by: 'admin-1',
-    },
-    {
-      id: 'batch-2',
-      drug_id: '1', // Paracetamol (newer batch)
-      batch_number: 'PAR-002',
-      quantity_received: 10, // 10 packs of 100
-      quantity_remaining: 10,
-      reserved_quantity: 0,
-      cost_price_per_unit: 1100.00, // Price went up
-      selling_price_per_unit: 1600.00,
-      manufacturing_date: '2023-06-01',
-      expiry_date: '2027-06-01',
-      date_received: new Date().toISOString(),
-      received_by: 'admin-1',
-    },
-    {
-      id: 'batch-3',
-      drug_id: '2', // Amoxicillin (whole unit)
-      batch_number: 'AMX-999',
-      quantity_received: 50,
-      quantity_remaining: 50,
-      reserved_quantity: 0,
-      cost_price_per_unit: 500.00,
-      selling_price_per_unit: 750.00,
-      expiry_date: '2027-12-01', // Expiring sooner
-      date_received: new Date().toISOString(),
-      received_by: 'admin-1',
-    }
+    { id: 'batch-1', drug_id: '1', batch_number: 'PAR-001', quantity_received: 10, quantity_remaining: 10, reserved_quantity: 0, cost_price_per_unit: 1000, selling_price_per_unit: 1500, expiry_date: '2027-01-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-2', drug_id: '2', batch_number: 'AMX-001', quantity_received: 20, quantity_remaining: 20, reserved_quantity: 0, cost_price_per_unit: 600, selling_price_per_unit: 800, expiry_date: '2027-02-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-3', drug_id: '3', batch_number: 'PAR-002', quantity_received: 5, quantity_remaining: 5, reserved_quantity: 0, cost_price_per_unit: 1200, selling_price_per_unit: 1700, expiry_date: '2027-03-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-4', drug_id: '4', batch_number: 'AMX-002', quantity_received: 15, quantity_remaining: 15, reserved_quantity: 0, cost_price_per_unit: 800, selling_price_per_unit: 1200, expiry_date: '2027-04-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-5', drug_id: '5', batch_number: 'VIT-001', quantity_received: 50, quantity_remaining: 50, reserved_quantity: 0, cost_price_per_unit: 400, selling_price_per_unit: 600, expiry_date: '2027-05-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-6', drug_id: '6', batch_number: 'VIT-002', quantity_received: 30, quantity_remaining: 30, reserved_quantity: 0, cost_price_per_unit: 500, selling_price_per_unit: 750, expiry_date: '2027-06-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-7', drug_id: '7', batch_number: 'VITE-001', quantity_received: 20, quantity_remaining: 20, reserved_quantity: 0, cost_price_per_unit: 1500, selling_price_per_unit: 2200, expiry_date: '2027-07-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-8', drug_id: '8', batch_number: 'VITE-002', quantity_received: 25, quantity_remaining: 25, reserved_quantity: 0, cost_price_per_unit: 1400, selling_price_per_unit: 2000, expiry_date: '2027-08-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-9', drug_id: '9', batch_number: 'IBU-001', quantity_received: 40, quantity_remaining: 40, reserved_quantity: 0, cost_price_per_unit: 500, selling_price_per_unit: 800, expiry_date: '2027-09-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-10', drug_id: '10', batch_number: 'IBU-002', quantity_received: 10, quantity_remaining: 10, reserved_quantity: 0, cost_price_per_unit: 700, selling_price_per_unit: 1000, expiry_date: '2027-10-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-11', drug_id: '11', batch_number: 'ART-001', quantity_received: 60, quantity_remaining: 60, reserved_quantity: 0, cost_price_per_unit: 800, selling_price_per_unit: 1200, expiry_date: '2027-11-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-12', drug_id: '12', batch_number: 'ART-002', quantity_received: 45, quantity_remaining: 45, reserved_quantity: 0, cost_price_per_unit: 900, selling_price_per_unit: 1400, expiry_date: '2027-12-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-13', drug_id: '13', batch_number: 'COU-001', quantity_received: 35, quantity_remaining: 35, reserved_quantity: 0, cost_price_per_unit: 1100, selling_price_per_unit: 1600, expiry_date: '2028-01-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-14', drug_id: '14', batch_number: 'COU-002', quantity_received: 20, quantity_remaining: 20, reserved_quantity: 0, cost_price_per_unit: 1300, selling_price_per_unit: 1800, expiry_date: '2028-02-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-15', drug_id: '15', batch_number: 'OME-001', quantity_received: 25, quantity_remaining: 25, reserved_quantity: 0, cost_price_per_unit: 400, selling_price_per_unit: 700, expiry_date: '2028-03-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-16', drug_id: '16', batch_number: 'OME-002', quantity_received: 15, quantity_remaining: 15, reserved_quantity: 0, cost_price_per_unit: 500, selling_price_per_unit: 800, expiry_date: '2028-04-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-17', drug_id: '17', batch_number: 'MET-001', quantity_received: 30, quantity_remaining: 30, reserved_quantity: 0, cost_price_per_unit: 1000, selling_price_per_unit: 1500, expiry_date: '2028-05-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-18', drug_id: '18', batch_number: 'MET-002', quantity_received: 40, quantity_remaining: 40, reserved_quantity: 0, cost_price_per_unit: 800, selling_price_per_unit: 1200, expiry_date: '2028-06-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-19', drug_id: '19', batch_number: 'AML-001', quantity_received: 20, quantity_remaining: 20, reserved_quantity: 0, cost_price_per_unit: 600, selling_price_per_unit: 900, expiry_date: '2028-07-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-20', drug_id: '20', batch_number: 'AML-002', quantity_received: 15, quantity_remaining: 15, reserved_quantity: 0, cost_price_per_unit: 500, selling_price_per_unit: 800, expiry_date: '2028-08-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-21', drug_id: '21', batch_number: 'CET-001', quantity_received: 50, quantity_remaining: 50, reserved_quantity: 0, cost_price_per_unit: 300, selling_price_per_unit: 500, expiry_date: '2028-09-01', date_received: new Date().toISOString(), received_by: 'admin-1' },
+    { id: 'batch-22', drug_id: '22', batch_number: 'DIC-001', quantity_received: 25, quantity_remaining: 25, reserved_quantity: 0, cost_price_per_unit: 400, selling_price_per_unit: 600, expiry_date: '2028-10-01', date_received: new Date().toISOString(), received_by: 'admin-1' }
   ]
 }
 
