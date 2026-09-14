@@ -1,0 +1,72 @@
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import { getMockBatchesForDrug, saveMockBatch, type Batch } from '@/lib/mock-data/batches'
+import { revalidatePath } from 'next/cache'
+
+export async function getBatchesForDrug(drugId: string) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    return getMockBatchesForDrug(drugId)
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('batches')
+    .select('*')
+    .eq('drug_id', drugId)
+    .order('expiry_date', { ascending: true })
+
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function restockDrug(data: Partial<Batch>) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) throw new Error('Unauthorized')
+  
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    saveMockBatch({ ...data, received_by: user.id })
+    revalidatePath('/admin/drugs')
+    revalidatePath('/staff/drugs')
+    return { success: true }
+  }
+
+  // 1. Try to find a matching batch to merge
+  const { data: existingBatch } = await supabase
+    .from('batches')
+    .select('id, quantity_received, quantity_remaining')
+    .eq('drug_id', data.drug_id)
+    .eq('cost_price_per_unit', data.cost_price_per_unit)
+    .eq('selling_price_per_unit', data.selling_price_per_unit)
+    .eq('expiry_date', data.expiry_date)
+    .eq('batch_number', data.batch_number || null)
+    .single()
+
+  if (existingBatch && data.quantity_received) {
+    // Merge
+    const { error } = await supabase
+      .from('batches')
+      .update({
+        quantity_received: existingBatch.quantity_received + data.quantity_received,
+        quantity_remaining: existingBatch.quantity_remaining + data.quantity_received
+      })
+      .eq('id', existingBatch.id)
+
+    if (error) throw new Error(error.message)
+  } else {
+    // Create new
+    const { error } = await supabase.from('batches').insert([{
+      ...data,
+      received_by: user.id,
+      quantity_remaining: data.quantity_received,
+      reserved_quantity: 0
+    }])
+    if (error) throw new Error(error.message)
+  }
+  
+  revalidatePath('/admin/drugs')
+  revalidatePath('/staff/drugs')
+  return { success: true }
+}
