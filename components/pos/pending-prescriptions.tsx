@@ -7,12 +7,15 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cancelPrescription } from '@/app/actions/pos'
 import type { Prescription } from '@/lib/mock-data/prescriptions'
-import { Loader2, XCircle, Clock } from 'lucide-react'
+import type { DrugWithStock } from '@/app/actions/drugs'
+import { Loader2, XCircle, Clock, CheckCircle2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { PaymentConfirmDialog } from './payment-confirm-dialog'
 
-export function PendingPrescriptions({ prescriptions }: { prescriptions: Prescription[] }) {
+export function PendingPrescriptions({ prescriptions, drugs }: { prescriptions: Prescription[], drugs: DrugWithStock[] }) {
   const router = useRouter()
   const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [confirmingPrescription, setConfirmingPrescription] = useState<Prescription | null>(null)
 
   const handleCancel = async (id: string) => {
     if (!confirm("Are you sure you want to cancel this prescription? This will release the reserved stock.")) return
@@ -72,20 +75,32 @@ export function PendingPrescriptions({ prescriptions }: { prescriptions: Prescri
                     {p.created_by}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleCancel(p.id)}
-                      disabled={cancellingId === p.id}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8"
-                    >
-                      {cancellingId === p.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                      ) : (
-                        <XCircle className="h-4 w-4 mr-1" />
-                      )}
-                      Cancel
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleCancel(p.id)}
+                        disabled={cancellingId === p.id}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8"
+                      >
+                        {cancellingId === p.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                        ) : (
+                          <XCircle className="h-4 w-4 mr-1" />
+                        )}
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="h-8 bg-emerald-600 hover:bg-emerald-700"
+                        onClick={() => setConfirmingPrescription(p)}
+                        disabled={cancellingId === p.id}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                        Confirm Payment
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -93,6 +108,17 @@ export function PendingPrescriptions({ prescriptions }: { prescriptions: Prescri
           </Table>
         )}
       </CardContent>
+
+      {confirmingPrescription && (
+        <PaymentConfirmDialog
+          prescription={confirmingPrescription}
+          drugs={drugs}
+          open={!!confirmingPrescription}
+          onOpenChange={(open) => {
+            if (!open) setConfirmingPrescription(null)
+          }}
+        />
+      )}
     </Card>
   )
 }

@@ -1,9 +1,15 @@
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { SalesChart } from './components/sales-chart'
-import { ArrowUpRight, TrendingUp, AlertCircle, ShoppingBag, MoreHorizontal, Download, Pill } from 'lucide-react'
+import { ArrowUpRight, TrendingUp, AlertCircle, ShoppingBag, MoreHorizontal, Download, Pill, Box } from 'lucide-react'
+import { getActiveAlerts } from '@/app/actions/alerts'
+import { getAdminDashboardMetrics } from '@/app/actions/dashboard'
 
-export default function AdminDashboard() {
+export default async function AdminDashboard() {
+  const alerts = await getActiveAlerts()
+  const metrics = await getAdminDashboardMetrics()
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -23,7 +29,7 @@ export default function AdminDashboard() {
       </div>
       
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Primary Metric - Dark Green */}
         <Card className="bg-primary text-primary-foreground border-none shadow-md relative overflow-hidden rounded-[24px]">
           <div className="absolute -top-4 -right-4 p-4 opacity-10">
@@ -31,18 +37,14 @@ export default function AdminDashboard() {
           </div>
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center relative z-10">
-              <CardTitle className="text-sm font-medium text-primary-foreground/80">Total Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium text-primary-foreground/80">Total Revenue Today</CardTitle>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20 rounded-full">
                 <MoreHorizontal className="w-4 h-4" />
               </Button>
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <p className="text-4xl font-bold">₦12,500,000</p>
-            <div className="flex items-center mt-4 text-sm font-medium text-primary-foreground/90 bg-primary-foreground/20 w-fit px-3 py-1 rounded-full">
-              <ArrowUpRight className="w-4 h-4 mr-1" />
-              +8.4% Since last week
-            </div>
+            <p className="text-3xl font-bold">₦{metrics.totalRevenueToday.toLocaleString()}</p>
           </CardContent>
         </Card>
         
@@ -51,7 +53,7 @@ export default function AdminDashboard() {
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4" /> New Orders
+                <ShoppingBag className="w-4 h-4" /> Sales Today
               </CardTitle>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground rounded-full hover:bg-muted">
                 <MoreHorizontal className="w-4 h-4" />
@@ -59,11 +61,24 @@ export default function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold text-foreground">1,240</p>
-            <div className="flex items-center mt-4 text-sm font-medium text-emerald-600 bg-emerald-50 w-fit px-3 py-1 rounded-full">
-              <ArrowUpRight className="w-4 h-4 mr-1" />
-              +12.5% Since last week
+            <p className="text-3xl font-bold text-foreground">{metrics.transactionCountToday.toLocaleString()}</p>
+          </CardContent>
+        </Card>
+
+        {/* Inventory Value Metric */}
+        <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]">
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Box className="w-4 h-4" /> Inventory Value
+              </CardTitle>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground rounded-full hover:bg-muted">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
             </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-foreground">₦{metrics.inventoryValue.toLocaleString()}</p>
           </CardContent>
         </Card>
         
@@ -80,11 +95,13 @@ export default function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold text-foreground">24</p>
-            <div className="flex items-center mt-4 text-sm font-medium text-amber-600 bg-amber-50 w-fit px-3 py-1 rounded-full">
-              <AlertCircle className="w-4 h-4 mr-1" />
-              Items need attention
-            </div>
+            <p className="text-3xl font-bold text-foreground">{alerts.length}</p>
+            <Link href="/admin/drugs?tab=low_stock">
+              <div className={`cursor-pointer flex items-center mt-2 text-sm font-medium w-fit px-3 py-1 rounded-full hover:opacity-80 transition-opacity ${alerts.length > 0 ? 'text-red-600 bg-red-50' : 'text-emerald-600 bg-emerald-50'}`}>
+                <AlertCircle className="w-4 h-4 mr-1" />
+                {alerts.length > 0 ? 'Items need attention' : 'All good'}
+              </div>
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -107,6 +124,39 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
+        {/* Top Selling Drugs */}
+        <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] flex flex-col">
+          <CardHeader className="pb-6">
+            <CardTitle className="text-xl font-bold flex items-center justify-between">
+              Top Selling Today
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <div className="space-y-6">
+              {metrics.topSellingDrugs.length > 0 ? metrics.topSellingDrugs.map((item, i) => (
+                <div key={i} className="flex items-center justify-between group cursor-pointer p-2 -mx-2 rounded-xl hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/5 text-primary">
+                      <span className="font-bold text-sm">#{i + 1}</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-foreground">{item.drug_name}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-sm text-foreground">{item.quantity.toLocaleString()}</p>
+                    <p className="text-[11px] font-semibold mt-0.5 text-muted-foreground uppercase tracking-wider">Units</p>
+                  </div>
+                </div>
+              )) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No sales today</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}
         <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] flex flex-col">
           <CardHeader className="pb-6">
@@ -117,16 +167,10 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent className="flex-1">
             <div className="space-y-6">
-              {[
-                { name: 'Amoxicillin 500mg', qty: '+500 units', time: '2 hours ago', status: 'Delivered' },
-                { name: 'Ibuprofen 400mg', qty: '+200 units', time: '5 hours ago', status: 'Delivered' },
-                { name: 'Vitamin C Syrup', qty: '+50 bottles', time: 'Yesterday', status: 'Pending' },
-                { name: 'Lisinopril 10mg', qty: '+100 units', time: 'Yesterday', status: 'Delivered' },
-                { name: 'Cough Syrup (Adult)', qty: '+20 bottles', time: '2 days ago', status: 'Pending' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between group cursor-pointer p-2 -mx-2 rounded-xl hover:bg-muted/50 transition-colors">
+              {metrics.recentRestocks.length > 0 ? metrics.recentRestocks.map((item, i) => (
+                <div key={item.id} className="flex items-center justify-between group cursor-pointer p-2 -mx-2 rounded-xl hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${item.status === 'Pending' ? 'bg-amber-100/50 text-amber-600 group-hover:bg-amber-100' : 'bg-primary/5 text-primary group-hover:bg-primary/10'}`}>
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors bg-primary/5 text-primary group-hover:bg-primary/10">
                       <Pill className="w-5 h-5" />
                     </div>
                     <div>
@@ -135,11 +179,13 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-sm text-foreground">{item.qty}</p>
-                    <p className={`text-[11px] font-semibold mt-0.5 uppercase tracking-wider ${item.status === 'Pending' ? 'text-amber-600' : 'text-emerald-600'}`}>{item.status}</p>
+                    <p className="font-bold text-sm text-foreground">{item.quantity}</p>
+                    <p className="text-[11px] font-semibold mt-0.5 uppercase tracking-wider text-emerald-600">{item.status}</p>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No recent restocks</p>
+              )}
             </div>
           </CardContent>
         </Card>

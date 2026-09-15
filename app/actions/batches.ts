@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getMockBatchesForDrug, saveMockBatch, type Batch } from '@/lib/mock-data/batches'
 import { revalidatePath } from 'next/cache'
+import { evaluateAlerts } from './alerts'
 
 export async function getBatchesForDrug(drugId: string) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -30,6 +31,7 @@ export async function restockDrug(data: Partial<Batch>) {
     saveMockBatch({ ...data, received_by: user.id })
     revalidatePath('/admin/drugs')
     revalidatePath('/staff/drugs')
+    await evaluateAlerts()
     return { success: true }
   }
 
@@ -68,5 +70,6 @@ export async function restockDrug(data: Partial<Batch>) {
   
   revalidatePath('/admin/drugs')
   revalidatePath('/staff/drugs')
+  await evaluateAlerts()
   return { success: true }
 }

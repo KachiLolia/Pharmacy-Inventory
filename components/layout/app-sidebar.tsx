@@ -13,7 +13,10 @@ import {
   ChevronLeft,
   ChevronRight,
   PackageSearch,
-  ShoppingCart
+  ShoppingCart,
+  Receipt,
+  RefreshCcw,
+  AlertCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -32,14 +35,17 @@ export function AppSidebar({ role }: AppSidebarProps) {
   const adminLinks = [
     { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/admin/pos', icon: ShoppingCart, label: 'POS / Prescriptions' },
+    { href: '/admin/sales', icon: Receipt, label: 'Sales Records' },
+    { href: '/admin/refunds', icon: RefreshCcw, label: 'Refunds' },
     { href: '/admin/drugs', icon: Pill, label: 'Drug Catalog' },
     { href: '/admin/staff', icon: Users, label: 'Staff Management' },
-    { href: '#', icon: Settings, label: 'Settings' },
+    { href: '/admin/settings', icon: Settings, label: 'Settings' },
   ]
 
   const staffLinks = [
     { href: '/staff', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/staff/pos', icon: ShoppingCart, label: 'POS / Prescriptions' },
+    { href: '/staff/sales', icon: Receipt, label: 'Sales Records' },
     { href: '/staff/drugs', icon: PackageSearch, label: 'Drug Catalog' },
   ]
 

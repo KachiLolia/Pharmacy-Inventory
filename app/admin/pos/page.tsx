@@ -18,7 +18,7 @@ export default async function POSPage() {
 
       <POSInterface drugs={drugs} />
       
-      <PendingPrescriptions prescriptions={pendingPrescriptions} />
+      <PendingPrescriptions prescriptions={pendingPrescriptions} drugs={drugs} />
     </div>
   )
 }

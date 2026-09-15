@@ -6,10 +6,12 @@ import {
   getMockPrescriptionItems, 
   saveMockPrescription, 
   saveMockPrescriptionItem, 
-  updateMockPrescriptionStatus 
+  updateMockPrescriptionStatus,
+  updateMockPrescription
 } from '@/lib/mock-data/prescriptions'
 import { getMockBatches, saveMockBatch } from '@/lib/mock-data/batches'
 import { revalidatePath } from 'next/cache'
+import { evaluateAlerts } from './alerts'
 
 export type CartItem = {
   drug_id: string
@@ -307,6 +309,46 @@ export async function getPendingPrescriptions() {
   return data
 }
 
+export async function getCompletedPrescriptions(isAdmin: boolean = false) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    // For mock environment, we can't easily get the real 'current user' without a session, 
+    // but we can simulate the filter if needed. We'll return all for admin, and simulate staff by filtering 'staff@example.com' if not admin.
+    // However, the PRD says created_by is stored. We'll just return all for admin.
+    const allCompleted = getMockPrescriptions().filter(p => p.status === 'completed').sort((a, b) => new Date(b.confirmed_at || b.created_at).getTime() - new Date(a.confirmed_at || a.created_at).getTime()).reverse()
+    
+    // In mock mode, if not admin, we would normally filter. Since we lack mock auth state here, we might just return all, or filter by a dummy user.
+    // To satisfy the requirement: "Staff can view only completed sales processed by themselves. Enforce this server-side"
+    // We'll filter by 'staff@example.com' if not admin (assuming our mock login sets created_by to 'staff@example.com' or 'admin@example.com').
+    if (!isAdmin) {
+      // In our pos.ts, created_by is set to 'staff-1' or similar in mock if we passed it, but currently it's just what's in mock data.
+      // We will rely on Supabase for real enforcement.
+      return allCompleted.filter(p => p.created_by !== 'admin-1' && p.created_by !== 'admin@pharmacy.com')
+    }
+    
+    return allCompleted
+  }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  let query = supabase
+    .from('prescriptions')
+    .select('*')
+    .eq('status', 'completed')
+    .order('confirmed_at', { ascending: false })
+
+  if (!isAdmin) {
+    const createdBy = user.email || user.id
+    query = query.eq('created_by', createdBy)
+  }
+
+  const { data, error } = await query
+
+  if (error) throw new Error(error.message)
+  return data
+}
+
 export async function getPrescriptionItems(prescriptionId: string) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return getMockPrescriptionItems().filter(i => i.prescription_id === prescriptionId)
@@ -320,4 +362,132 @@ export async function getPrescriptionItems(prescriptionId: string) {
 
   if (error) throw new Error(error.message)
   return data
+}
+
+export async function confirmPayment(prescriptionId: string, paymentMethod: 'cash' | 'card' | 'transfer') {
+  const receipt_number = `RCPT-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`
+  const confirmed_at = new Date().toISOString()
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    const prescriptions = getMockPrescriptions()
+    const prescription = prescriptions.find(p => p.id === prescriptionId)
+    if (!prescription) throw new Error('Prescription not found')
+    if (prescription.status !== 'pending') throw new Error('Only pending prescriptions can be confirmed')
+
+    const items = getMockPrescriptionItems().filter(i => i.prescription_id === prescriptionId)
+    const batches = getMockBatches()
+
+    // 1. Verify all reserved quantities are still valid
+    for (const item of items) {
+      const batch = batches.find(b => b.id === item.batch_id)
+      if (!batch) throw new Error(`Batch ${item.batch_id} not found`)
+      if (batch.reserved_quantity < item.quantity) {
+        throw new Error(`Invalid reserved quantity for batch ${item.batch_id}`)
+      }
+      if (batch.quantity_remaining < item.quantity) {
+         throw new Error(`Insufficient actual stock in batch ${item.batch_id}`)
+      }
+    }
+
+    // 2. Perform the atomic transaction updates
+    for (const item of items) {
+      const batch = batches.find(b => b.id === item.batch_id)!
+      saveMockBatch({
+        id: batch.id,
+        quantity_remaining: Math.max(0, batch.quantity_remaining - item.quantity),
+        reserved_quantity: Math.max(0, batch.reserved_quantity - item.quantity)
+      })
+    }
+
+    updateMockPrescription(prescriptionId, {
+      status: 'completed',
+      payment_method: paymentMethod,
+      receipt_number,
+      confirmed_at
+    })
+
+    revalidatePath('/admin/pos')
+    revalidatePath('/staff/pos')
+    revalidatePath('/admin')
+    revalidatePath('/staff')
+    
+    await evaluateAlerts()
+    
+    return { success: true, receipt_number, confirmed_at }
+  }
+
+  // Supabase Implementation
+  const supabase = await createClient()
+
+  // 1. Verify prescription state
+  const { data: prescription, error: pError } = await supabase
+    .from('prescriptions')
+    .select('status')
+    .eq('id', prescriptionId)
+    .single()
+  
+  if (pError || !prescription) throw new Error('Prescription not found')
+  if (prescription.status !== 'pending') throw new Error('Only pending prescriptions can be confirmed')
+
+  const { data: items, error: iError } = await supabase
+    .from('prescription_items')
+    .select('*')
+    .eq('prescription_id', prescriptionId)
+
+  if (iError || !items) throw new Error('Could not fetch prescription items')
+
+  // Ideally, use an RPC for the transaction. For this implementation we will execute sequentially.
+  for (const item of items) {
+    const { data: batch } = await supabase
+      .from('batches')
+      .select('quantity_remaining, reserved_quantity')
+      .eq('id', item.batch_id)
+      .single()
+
+    if (!batch) throw new Error(`Batch ${item.batch_id} not found`)
+    if (batch.reserved_quantity < item.quantity || batch.quantity_remaining < item.quantity) {
+      throw new Error(`Invalid stock quantities for batch ${item.batch_id}`)
+    }
+  }
+
+  // Deduct
+  for (const item of items) {
+    const { data: batch } = await supabase
+      .from('batches')
+      .select('quantity_remaining, reserved_quantity')
+      .eq('id', item.batch_id)
+      .single()
+    
+    if (batch) {
+      await supabase
+        .from('batches')
+        .update({
+          quantity_remaining: Math.max(0, batch.quantity_remaining - item.quantity),
+          reserved_quantity: Math.max(0, batch.reserved_quantity - item.quantity)
+        })
+        .eq('id', item.batch_id)
+    }
+  }
+
+  // Mark as completed
+  const { error: updateError } = await supabase
+    .from('prescriptions')
+    .update({
+      status: 'completed',
+      payment_method: paymentMethod,
+      receipt_number,
+      confirmed_at
+    })
+    .eq('id', prescriptionId)
+
+  if (updateError) throw new Error(updateError.message)
+
+  revalidatePath('/admin/pos')
+  revalidatePath('/staff/pos')
+  revalidatePath('/admin')
+  revalidatePath('/staff')
+  
+  await evaluateAlerts()
+  
+  return { success: true, receipt_number, confirmed_at }
 }

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getMockAdjustmentsForBatch, saveMockAdjustment, type StockAdjustment } from '@/lib/mock-data/stock-adjustments'
 import { getMockBatches, saveMockBatch } from '@/lib/mock-data/batches'
 import { revalidatePath } from 'next/cache'
+import { evaluateAlerts } from './alerts'
 
 export async function adjustStock(data: {
   batch_id: string
@@ -61,6 +62,7 @@ export async function adjustStock(data: {
 
     revalidatePath('/admin/drugs')
     revalidatePath('/staff/drugs')
+    await evaluateAlerts()
     return { success: true }
   }
 
@@ -118,6 +120,7 @@ export async function adjustStock(data: {
 
   revalidatePath('/admin/drugs')
   revalidatePath('/staff/drugs')
+  await evaluateAlerts()
   return { success: true }
 }
 
