@@ -3,6 +3,7 @@ import { getActiveAlerts } from '@/app/actions/alerts'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { SearchInput } from '@/components/ui/search-input'
 import { DrugFormDialog } from './components/drug-form'
 import { RestockFormDialog } from './components/restock-form'
 import { BatchListDialog } from './components/batch-list'
@@ -16,15 +17,22 @@ export const dynamic = 'force-dynamic'
 export default async function AdminDrugsPage({
   searchParams
 }: {
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string, q?: string }>
 }) {
   const resolvedParams = await searchParams
   const activeTab = resolvedParams.tab || 'all'
+  const searchQuery = (resolvedParams.q || '').toLowerCase()
   
   const allDrugs = await getDrugs(true) // include inactive
   const alerts = await getActiveAlerts()
   
   const drugs = allDrugs.filter(drug => {
+    if (searchQuery) {
+      const nameMatch = drug.name.toLowerCase().includes(searchQuery)
+      const catMatch = drug.category.toLowerCase().includes(searchQuery)
+      if (!nameMatch && !catMatch) return false
+    }
+
     if (activeTab === 'all') return true
     
     const drugAlerts = alerts.filter(a => a.drug_id === drug.id)
@@ -42,11 +50,14 @@ export default async function AdminDrugsPage({
           <h2 className="text-2xl font-semibold tracking-tight">Drug Catalog</h2>
           <p className="text-muted-foreground text-sm">Manage the central catalog of medications.</p>
         </div>
-        <DrugFormDialog>
-          <div className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2 w-full sm:w-auto gap-2 cursor-pointer">
-            <Plus className="w-4 h-4" /> Add New Drug
-          </div>
-        </DrugFormDialog>
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+          <SearchInput placeholder="Search drugs by name or category..." />
+          <DrugFormDialog>
+            <div className="inline-flex shrink-0 whitespace-nowrap items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-11 px-4 py-2 w-full sm:w-auto gap-2 cursor-pointer">
+              <Plus className="w-4 h-4" /> Add New Drug
+            </div>
+          </DrugFormDialog>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 border-b pb-2">
@@ -64,7 +75,7 @@ export default async function AdminDrugsPage({
         </Link>
       </div>
 
-      <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
+      <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden hidden md:block">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -148,7 +159,7 @@ export default async function AdminDrugsPage({
               })}
               {drugs.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                     No drugs found in the catalog. Add one to get started.
                   </TableCell>
                 </TableRow>
@@ -156,6 +167,80 @@ export default async function AdminDrugsPage({
             </TableBody>
           </Table>
         </div>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden grid grid-cols-1 gap-4">
+        {drugs.map((drug: DrugWithStock) => {
+          const drugAlerts = alerts.filter(a => a.drug_id === drug.id)
+          const isLowStock = drugAlerts.some(a => a.type === 'low_stock')
+          const isExpiring = drugAlerts.some(a => a.type === 'expiry')
+          
+          let cardClass = "overflow-hidden shadow-sm transition-all duration-300 border bg-card rounded-xl"
+          let topBarClass = "h-1.5 bg-primary/20 w-full"
+          
+          if (!drug.is_active) {
+            cardClass += " opacity-60"
+            topBarClass = "h-1.5 bg-muted w-full"
+          } else if (isLowStock || isExpiring) {
+            cardClass += " bg-red-50/50"
+            topBarClass = "h-1.5 bg-red-500 w-full"
+          }
+
+          return (
+            <div key={drug.id} className={cardClass}>
+              <div className={topBarClass} />
+              <div className="p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h3 className="font-semibold text-lg text-foreground leading-tight flex items-center gap-2">
+                      {drug.name}
+                      {isLowStock && <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">Low Stock</Badge>}
+                      {isExpiring && <Badge variant="outline" className="border-orange-200 bg-orange-50 text-orange-600 h-5 px-1.5 text-[10px]">Expiring</Badge>}
+                    </h3>
+                    <p className="text-muted-foreground text-xs mt-1">
+                      {drug.dose}
+                      {drug.manufacturer && <span className="ml-1.5">• {drug.manufacturer}</span>}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    {!drug.is_active ? (
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-500 shadow-none font-medium">Discontinued</Badge>
+                    ) : drug.current_stock > 0 ? (
+                      <span className={isLowStock ? "text-xs font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded-full" : "text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full"}>
+                        {drug.current_stock.toLocaleString()} in stock
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Out of Stock</span>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="mt-3 pt-3 border-t border-border/40 flex flex-wrap gap-2 justify-end">
+                  <BatchListDialog drug={drug}>
+                    <Button variant="ghost" size="sm" className="h-8 text-muted-foreground flex-1">
+                      Batches
+                    </Button>
+                  </BatchListDialog>
+                  <RestockFormDialog drug={drug}>
+                    <Button variant="outline" size="sm" className="h-8 flex-1">
+                      Restock
+                    </Button>
+                  </RestockFormDialog>
+                  <DrugFormDialog drug={drug}>
+                    <div className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring hover:bg-accent hover:text-accent-foreground h-8 px-3 text-primary hover:bg-primary/10 cursor-pointer flex-1 border border-primary/20">Edit</div>
+                  </DrugFormDialog>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+
+        {drugs.length === 0 && (
+          <div className="py-16 text-center text-muted-foreground border-2 border-dashed rounded-xl">
+            No drugs found in the catalog.
+          </div>
+        )}
       </div>
     </div>
   )

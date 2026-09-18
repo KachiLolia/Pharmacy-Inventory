@@ -2,8 +2,7 @@ import { getDrugs, type DrugWithStock } from '@/app/actions/drugs'
 import { getActiveAlerts } from '@/app/actions/alerts'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Search } from 'lucide-react'
+import { SearchInput } from '@/components/ui/search-input'
 // import type { Drug } from '@/lib/mock-data/drugs'
 
 import Link from 'next/link'
@@ -13,15 +12,22 @@ export const dynamic = 'force-dynamic'
 export default async function StaffDrugsPage({
   searchParams
 }: {
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string, q?: string }>
 }) {
   const resolvedParams = await searchParams
   const activeTab = resolvedParams.tab || 'all'
+  const searchQuery = (resolvedParams.q || '').toLowerCase()
 
   const allDrugs = await getDrugs(false) // active only for staff
   const alerts = await getActiveAlerts()
 
   const drugs = allDrugs.filter(drug => {
+    if (searchQuery) {
+      const nameMatch = drug.name.toLowerCase().includes(searchQuery)
+      const catMatch = drug.category.toLowerCase().includes(searchQuery)
+      if (!nameMatch && !catMatch) return false
+    }
+
     if (activeTab === 'all') return true
     
     const drugAlerts = alerts.filter(a => a.drug_id === drug.id)
@@ -40,10 +46,7 @@ export default async function StaffDrugsPage({
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="relative w-full sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search drugs by name or category..." className="pl-9 h-11 bg-white shadow-sm rounded-xl" />
-        </div>
+        <SearchInput placeholder="Search drugs by name or category..." />
         
         <div className="flex flex-wrap items-center gap-2 border-b pb-2 sm:border-none sm:pb-0">
           <Link href="/staff/drugs?tab=all">

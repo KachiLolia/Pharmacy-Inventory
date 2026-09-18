@@ -16,7 +16,8 @@ import {
   ShoppingCart,
   Receipt,
   RefreshCcw,
-  AlertCircle
+  AlertCircle,
+  BarChart3
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -31,6 +32,7 @@ interface AppSidebarProps {
 export function AppSidebar({ role }: AppSidebarProps) {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   const adminLinks = [
     { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
@@ -39,6 +41,7 @@ export function AppSidebar({ role }: AppSidebarProps) {
     { href: '/admin/refunds', icon: RefreshCcw, label: 'Refunds' },
     { href: '/admin/drugs', icon: Pill, label: 'Drug Catalog' },
     { href: '/admin/staff', icon: Users, label: 'Staff Management' },
+    { href: '/admin/reports', icon: BarChart3, label: 'Reports & Recon' },
     { href: '/admin/settings', icon: Settings, label: 'Settings' },
   ]
 
@@ -51,16 +54,19 @@ export function AppSidebar({ role }: AppSidebarProps) {
 
   const links = role === 'admin' ? adminLinks : staffLinks
 
-  const NavContent = () => (
+  const NavContent = ({ mobile = false }: { mobile?: boolean }) => {
+    const collapsed = !mobile && isCollapsed;
+    
+    return (
     <div className="flex h-full flex-col bg-primary text-primary-foreground transition-all duration-300">
-      <div className={cn("flex h-16 items-center border-b border-primary-foreground/10 px-4", isCollapsed ? "justify-center" : "justify-between")}>
+      <div className={cn("flex h-16 items-center border-b border-primary-foreground/10 px-4", collapsed ? "justify-center" : "justify-between")}>
         <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-foreground text-primary">
             <Pill className="h-5 w-5" />
           </div>
-          {!isCollapsed && <span>Pharmly</span>}
+          {!collapsed && <span>Pharmly</span>}
         </div>
-        {!isCollapsed && (
+        {!collapsed && !mobile && (
           <Button 
             variant="ghost" 
             size="icon" 
@@ -81,20 +87,23 @@ export function AppSidebar({ role }: AppSidebarProps) {
               <Link
                 key={link.href}
                 href={link.href}
+                onClick={() => {
+                  if (mobile) setSheetOpen(false)
+                }}
                 className={cn(
                   "group flex items-center rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200",
                   isActive 
                     ? "bg-accent text-accent-foreground shadow-sm" 
                     : "text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-white",
-                  isCollapsed ? "justify-center" : ""
+                  collapsed ? "justify-center" : ""
                 )}
               >
-                <link.icon className={cn("shrink-0", isCollapsed ? "h-6 w-6" : "mr-3 h-5 w-5", isActive ? "text-accent-foreground" : "text-primary-foreground/70 group-hover:text-white")} />
-                {!isCollapsed && <span>{link.label}</span>}
+                <link.icon className={cn("shrink-0", collapsed ? "h-6 w-6" : "mr-3 h-5 w-5", isActive ? "text-accent-foreground" : "text-primary-foreground/70 group-hover:text-white")} />
+                {!collapsed && <span>{link.label}</span>}
               </Link>
             )
 
-            if (isCollapsed) {
+            if (collapsed) {
               return (
                 <Tooltip key={link.href}>
                   <TooltipTrigger render={linkContent} />
@@ -111,7 +120,7 @@ export function AppSidebar({ role }: AppSidebarProps) {
       </div>
 
       <div className="border-t border-primary-foreground/10 p-3">
-        {isCollapsed && (
+        {collapsed && !mobile && (
            <Button 
             variant="ghost" 
             size="icon" 
@@ -125,15 +134,16 @@ export function AppSidebar({ role }: AppSidebarProps) {
            <Button 
             type="submit"
             variant="ghost" 
-            className={cn("w-full text-primary-foreground/70 hover:bg-destructive hover:text-destructive-foreground", isCollapsed ? "justify-center px-0" : "justify-start")}
+            className={cn("w-full text-primary-foreground/70 hover:bg-destructive hover:text-destructive-foreground", collapsed ? "justify-center px-0" : "justify-start")}
           >
-            <LogOut className={cn(isCollapsed ? "h-5 w-5 m-0" : "mr-3 h-5 w-5")} />
-            {!isCollapsed && <span>Log out</span>}
+            <LogOut className={cn(collapsed ? "h-5 w-5 m-0" : "mr-3 h-5 w-5")} />
+            {!collapsed && <span>Log out</span>}
           </Button>
         </form>
       </div>
     </div>
-  )
+    )
+  }
 
   return (
     <>
@@ -142,21 +152,30 @@ export function AppSidebar({ role }: AppSidebarProps) {
         <NavContent />
       </aside>
 
-      {/* Mobile Sidebar (Sheet) */}
-      <Sheet>
-        <SheetTrigger
-          render={
-            <Button variant="ghost" size="icon" className="md:hidden">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle Menu</span>
-            </Button>
-          }
-        />
-        <SheetContent side="left" className="w-64 p-0 border-none">
-          <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-          <NavContent />
-        </SheetContent>
-      </Sheet>
+      {/* Mobile Header & Sidebar Trigger */}
+      <div className="md:hidden flex items-center justify-between h-16 px-4 bg-primary text-primary-foreground shrink-0">
+        <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-foreground text-primary">
+            <Pill className="h-5 w-5" />
+          </div>
+          <span>Pharmly</span>
+        </div>
+        
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetTrigger 
+            render={
+              <Button variant="ghost" size="icon" className="text-primary-foreground/70 hover:text-white hover:bg-primary-foreground/10" />
+            }
+          >
+            <Menu className="h-6 w-6" />
+            <span className="sr-only">Toggle Menu</span>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64 p-0 border-none">
+            <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+            <NavContent mobile={true} />
+          </SheetContent>
+        </Sheet>
+      </div>
     </>
   )
 }

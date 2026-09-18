@@ -9,7 +9,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Pharmacy POS",
+  title: "Pharmly",
   description: "Modern pharmacy management system",
 };
 

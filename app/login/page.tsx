@@ -21,7 +21,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Pharmacy POS</CardTitle>
+          <CardTitle className="text-2xl font-bold">Pharmly</CardTitle>
           <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>
         <form action={handleSubmit}>

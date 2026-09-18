@@ -1,91 +1,81 @@
-import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Plus, Receipt, Clock, Pill, ArrowUpRight } from 'lucide-react'
+import { DashboardHeader } from '@/components/dashboard/dashboard-header'
+import { KPICard } from '@/components/dashboard/kpi-card'
+import { SalesChart } from '@/components/dashboard/sales-chart'
+import { TopSellingDrugs } from '@/components/dashboard/top-selling-drugs'
+import { InventoryOverview } from '@/components/dashboard/inventory-overview'
+import { QuickActions } from '@/components/dashboard/quick-actions'
 import { getStaffDashboardMetrics } from '@/app/actions/dashboard'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { getActiveAlerts } from '@/app/actions/alerts'
+import { Receipt, ShoppingCart, Box, AlertTriangle, Plus, FileText, Pill } from 'lucide-react'
+import { getMockUser } from '@/lib/mock-auth'
+import { redirect } from 'next/navigation'
 
 export default async function StaffDashboard() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-      },
-    }
-  )
-
-  const { data: { session } } = await supabase.auth.getSession()
+  const user = await getMockUser()
   
-  // Hardcode a mock staff-1 id if no session found for testing during development
-  const staffId = session?.user?.id || 'staff-1'
+  if (!user || user.role !== 'staff') {
+    redirect('/login')
+  }
+  
+  // Use a hardcoded mock staff id for testing during development
+  const staffId = 'staff-1'
   const metrics = await getStaffDashboardMetrics(staffId)
+  const alerts = await getActiveAlerts()
+
+  const quickActions = [
+    { title: 'New Prescription / Sale', href: '/staff/pos', icon: <Plus className="w-8 h-8" /> },
+    { title: 'View Sales Records', href: '/staff/sales', icon: <FileText className="w-8 h-8" /> },
+    { title: 'Drug Catalog', href: '/staff/drugs', icon: <Pill className="w-8 h-8" /> },
+  ]
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">Staff Dashboard</h2>
-          <p className="text-muted-foreground mt-1">Ready for your shift? Here's what's happening.</p>
+    <div className="space-y-6 pb-8 max-w-[1400px]">
+      <DashboardHeader role="Staff" />
+
+      {/* Row 1: KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KPICard 
+          title="Your Revenue Today" 
+          value={`₦${metrics.myRevenueToday.toLocaleString()}`} 
+          icon={<Receipt className="w-5 h-5" />} 
+        />
+        <KPICard 
+          title="Sales Completed Today" 
+          value={metrics.myTransactionCountToday.toLocaleString()} 
+          icon={<ShoppingCart className="w-5 h-5" />} 
+        />
+        <KPICard 
+          title="Inventory Value" 
+          value={`₦${metrics.inventoryValue.toLocaleString()}`} 
+          icon={<Box className="w-5 h-5" />} 
+          subtitle="Total stock value" 
+        />
+        <KPICard 
+          title="Inventory Alerts" 
+          value={alerts.length.toString()} 
+          icon={<AlertTriangle className="w-5 h-5" />} 
+          isAlert={alerts.length > 0} 
+        />
+      </div>
+
+      {/* Row 2: Sales Chart & Top Selling Drugs */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <SalesChart role="Staff" staffId={staffId} />
+        </div>
+        <div className="lg:col-span-1">
+          <TopSellingDrugs drugs={metrics.topSellingDrugs} />
         </div>
       </div>
 
-      {/* Primary Action */}
-      <Link href="/staff/pos" className="block w-full">
-        <Button className="w-full h-20 text-xl font-bold shadow-md rounded-[24px] gap-3 bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-[1.01]">
-          <Plus className="w-6 h-6" /> New Prescription / Sale
-        </Button>
-      </Link>
-
-      {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Receipt className="w-4 h-4" /> Your Revenue Today
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-bold text-foreground">₦{metrics.myRevenueToday.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Pill className="w-4 h-4" /> Sales Completed Today
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-bold text-foreground">{metrics.myTransactionCountToday.toLocaleString()}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Clock className="w-4 h-4" /> Shift Hours
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-bold text-foreground">4.5h</p>
-            <div className="flex items-center mt-4 text-sm font-medium text-muted-foreground bg-muted w-fit px-3 py-1 rounded-full">
-              Started at 8:00 AM
-            </div>
-          </CardContent>
-        </Card>
+      {/* Row 3: Inventory Overview & Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <InventoryOverview metrics={metrics.inventoryOverview} />
+        </div>
+        <div className="lg:col-span-1">
+          <QuickActions actions={quickActions} />
+        </div>
       </div>
     </div>
   )

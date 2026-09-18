@@ -170,7 +170,7 @@ export function POSInterface({ drugs }: { drugs: DrugWithStock[] }) {
               <div className="flex flex-col h-full">
                 <div className="overflow-y-auto max-h-[400px] p-4 space-y-4">
                   {cart.map(item => (
-                    <div key={item.drug.id} className="flex items-center justify-between p-3 border rounded-lg bg-card">
+                    <div key={item.drug.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg bg-card gap-3">
                       <div className="flex-1">
                         <p className="font-medium text-sm">
                           {item.drug.name}
@@ -188,7 +188,7 @@ export function POSInterface({ drugs }: { drugs: DrugWithStock[] }) {
                           ) : 'Price pending'}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto border-t sm:border-0 pt-3 sm:pt-0">
                         <div className="flex items-center border rounded-md overflow-hidden bg-background">
                           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none" onClick={() => updateQuantity(item.drug.id, Math.max(1, (typeof item.quantity === 'number' ? item.quantity : 0) - 1))}>
                             <Minus className="h-3 w-3" />
@@ -212,7 +212,7 @@ export function POSInterface({ drugs }: { drugs: DrugWithStock[] }) {
                             <Plus className="h-3 w-3" />
                           </Button>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => removeFromCart(item.drug.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0" onClick={() => removeFromCart(item.drug.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
