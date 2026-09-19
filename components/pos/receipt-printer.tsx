@@ -1,8 +1,10 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import type { Prescription, PrescriptionItem } from '@/lib/mock-data/prescriptions'
 import type { DrugWithStock } from '@/app/actions/drugs'
+import { getSettings } from '@/app/actions/settings'
+import type { SystemSettings } from '@/lib/mock-data/settings'
 
 interface ReceiptPrinterProps {
   prescription: Prescription
@@ -12,13 +14,29 @@ interface ReceiptPrinterProps {
 }
 
 export function ReceiptPrinter({ prescription, items, drugs, visible = false }: ReceiptPrinterProps) {
-  
+  const [settings, setSettings] = useState<SystemSettings | null>(null)
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const data = await getSettings()
+        setSettings(data)
+      } catch (err) {
+        console.error('Failed to load settings for receipt')
+      }
+    }
+    loadSettings()
+  }, [])
+
   return (
     <div className={`receipt-container text-black bg-white w-full max-w-[80mm] mx-auto p-4 text-xs font-mono ${visible ? 'block border shadow-sm' : 'hidden print:block'}`}>
       <div className="text-center mb-4">
-        <h2 className="text-lg font-bold uppercase mb-1">Pharmacy POS</h2>
-        <p>123 Health Ave, Medical District</p>
-        <p>Tel: +234 123 456 7890</p>
+        {settings?.pharmacy_logo_url ? (
+          <img src={settings.pharmacy_logo_url} alt="Logo" className="h-10 mx-auto mb-2 grayscale" />
+        ) : null}
+        <h2 className="text-lg font-bold uppercase mb-1">{settings?.pharmacy_name || 'Pharmacy POS'}</h2>
+        <p className="whitespace-pre-wrap">{settings?.pharmacy_address || '123 Health Ave, Medical District'}</p>
+        <p>Tel: {settings?.pharmacy_phone || '+234 123 456 7890'}</p>
       </div>
 
       <div className="border-b border-black border-dashed pb-2 mb-2 space-y-1">
@@ -98,9 +116,8 @@ export function ReceiptPrinter({ prescription, items, drugs, visible = false }: 
         </div>
       </div>
 
-      <div className="text-center mt-4 text-[10px]">
-        <p>Thank you for your patronage!</p>
-        <p>Please keep this receipt for your records.</p>
+      <div className="text-center mt-4 text-[10px] whitespace-pre-wrap">
+        {settings?.receipt_message || 'Thank you for your patronage!\nPlease keep this receipt for your records.'}
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `

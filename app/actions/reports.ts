@@ -1,9 +1,10 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
+import { requireAuth } from '@/lib/supabase/server'
 import { getMockPrescriptions, getMockPrescriptionItems } from '@/lib/mock-data/prescriptions'
 import { getMockBatches } from '@/lib/mock-data/batches'
 import { getMockDrugs } from '@/lib/mock-data/drugs'
-import { getMockUser } from '@/lib/mock-auth'
 import { getMockReconciliations, saveMockReconciliation, ReconciliationRecord } from '@/lib/mock-data/reconciliations'
 
 export type ReportDateRange = {
@@ -11,11 +12,8 @@ export type ReportDateRange = {
   endDate: string
 }
 
-const checkAdmin = async () => {
-  const user = await getMockUser()
-  if (user?.role !== 'admin') {
-    throw new Error('Unauthorized: Admin access required.')
-  }
+async function checkAdmin() {
+  await requireAuth(['admin'])
 }
 
 export type SalesReportData = {

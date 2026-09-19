@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { requireAuth, createClient } from '@/lib/supabase/server'
 import { getMockAdjustmentsForBatch, saveMockAdjustment, type StockAdjustment } from '@/lib/mock-data/stock-adjustments'
 import { getMockBatches, saveMockBatch } from '@/lib/mock-data/batches'
 import { revalidatePath } from 'next/cache'
@@ -14,10 +14,8 @@ export async function adjustStock(data: {
   reason: string
   notes?: string
 }) {
+  const { user } = await requireAuth(['admin'])
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) throw new Error('Unauthorized')
   
   const adjusted_by = user.email || user.id
 
@@ -125,11 +123,12 @@ export async function adjustStock(data: {
 }
 
 export async function getAdjustmentsForBatch(batchId: string) {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  await requireAuth(['admin'])
+  const supabase = await createClient()
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://dummy.supabase.co') {
     return getMockAdjustmentsForBatch(batchId)
   }
-
-  const supabase = await createClient()
   const { data, error } = await supabase
     .from('stock_adjustments')
     .select('*')

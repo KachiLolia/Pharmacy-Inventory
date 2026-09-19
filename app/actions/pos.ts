@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, requireAuth } from '@/lib/supabase/server'
 import { 
   getMockPrescriptions, 
   getMockPrescriptionItems, 
@@ -139,9 +139,8 @@ export async function calculateFEFOAllocation(cartItems: CartItem[]): Promise<FE
 }
 
 export async function createPrescription(cartItems: CartItem[]) {
+  const { user } = await requireAuth(['admin', 'staff'])
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
   const created_by = user.email || user.id
 
   // 1. Calculate and lock allocations securely on the server
@@ -328,9 +327,8 @@ export async function getCompletedPrescriptions(isAdmin: boolean = false) {
     return allCompleted
   }
 
+  const { user } = await requireAuth(['admin', 'staff'])
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
 
   let query = supabase
     .from('prescriptions')

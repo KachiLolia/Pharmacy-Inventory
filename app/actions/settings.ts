@@ -3,6 +3,7 @@
 import { getMockSettings, updateMockSettings, SystemSettings } from '@/lib/mock-data/settings'
 import { revalidatePath } from 'next/cache'
 import { evaluateAlerts } from './alerts'
+import { requireAuth } from '@/lib/supabase/server'
 
 export async function getSettings(): Promise<SystemSettings> {
   // In a real app this would query a supabase 'settings' table
@@ -10,6 +11,8 @@ export async function getSettings(): Promise<SystemSettings> {
 }
 
 export async function updateSettings(updates: Partial<SystemSettings>) {
+  await requireAuth(['admin'])
+
   // Mock updating settings
   updateMockSettings(updates)
   

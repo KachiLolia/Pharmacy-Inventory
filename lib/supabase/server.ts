@@ -53,3 +53,27 @@ export async function createClient() {
     }
   )
 }
+
+export async function requireAuth(allowedRoles?: ('admin' | 'staff')[]) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://dummy.supabase.co') {
+    const mockUser = await getMockUser()
+    if (!mockUser) throw new Error('Unauthorized')
+    if (allowedRoles && !allowedRoles.includes(mockUser.role)) throw new Error('Forbidden')
+    return { user: { id: mockUser.id, email: mockUser.email }, role: mockUser.role }
+  }
+
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) throw new Error('Unauthorized')
+
+  const { data: userData, error: userError } = await supabase
+    .from('app_users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (userError || !userData) throw new Error('User profile not found')
+  if (allowedRoles && !allowedRoles.includes(userData.role)) throw new Error('Forbidden: Insufficient role')
+
+  return { user, role: userData.role }
+}

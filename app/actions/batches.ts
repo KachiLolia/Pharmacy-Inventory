@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, requireAuth } from '@/lib/supabase/server'
 import { getMockBatchesForDrug, saveMockBatch, type Batch } from '@/lib/mock-data/batches'
 import { revalidatePath } from 'next/cache'
 import { evaluateAlerts } from './alerts'
@@ -22,10 +22,8 @@ export async function getBatchesForDrug(drugId: string) {
 }
 
 export async function restockDrug(data: Partial<Batch>) {
+  const { user } = await requireAuth(['admin'])
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) throw new Error('Unauthorized')
   
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     saveMockBatch({ ...data, received_by: user.id })

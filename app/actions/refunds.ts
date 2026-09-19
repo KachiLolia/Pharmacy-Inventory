@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, requireAuth } from '@/lib/supabase/server'
 import { 
   getMockPrescriptions, 
   getMockPrescriptionItems, 
@@ -20,9 +20,8 @@ export type RefundItemParams = {
 }
 
 export async function getRefundLogs() {
+  await requireAuth(['admin'])
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return getMockRefundLogs().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -43,22 +42,8 @@ export async function processRefund(
   restock: boolean, 
   reason: string
 ) {
+  const { user } = await requireAuth(['admin'])
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-
-  // Verify Role
-  let isAdmin = false
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    isAdmin = user.email?.includes('admin') || user.id.includes('admin')
-  } else {
-    const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single()
-    isAdmin = userData?.role === 'admin'
-  }
-
-  if (!isAdmin) {
-    throw new Error('Unauthorized: Only administrators can process refunds')
-  }
 
   if (!reason || reason.trim() === '') {
     throw new Error('A reason is required to process a refund')

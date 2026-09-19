@@ -1,10 +1,10 @@
-import { getMockUser } from '@/lib/mock-auth'
+import { requireAuth } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
 export default async function ReportsLayout({ children }: { children: React.ReactNode }) {
-  const user = await getMockUser()
-  
-  if (user?.role !== 'admin') {
+  try {
+    await requireAuth(['admin'])
+  } catch (error) {
     redirect('/staff')
   }
 

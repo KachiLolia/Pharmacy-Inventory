@@ -7,18 +7,14 @@ import { QuickActions } from '@/components/dashboard/quick-actions'
 import { getStaffDashboardMetrics } from '@/app/actions/dashboard'
 import { getActiveAlerts } from '@/app/actions/alerts'
 import { Receipt, ShoppingCart, Box, AlertTriangle, Plus, FileText, Pill } from 'lucide-react'
-import { getMockUser } from '@/lib/mock-auth'
+import { requireAuth } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
 export default async function StaffDashboard() {
-  const user = await getMockUser()
+  const { user } = await requireAuth(['staff'])
   
-  if (!user || user.role !== 'staff') {
-    redirect('/login')
-  }
-  
-  // Use a hardcoded mock staff id for testing during development
-  const staffId = 'staff-1'
+  // Use a hardcoded mock staff id for testing during development, or real user id if supabase is connected
+  const staffId = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://dummy.supabase.co' ? user.id : 'staff-1'
   const metrics = await getStaffDashboardMetrics(staffId)
   const alerts = await getActiveAlerts()
 

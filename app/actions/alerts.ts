@@ -105,6 +105,9 @@ export async function evaluateAlerts() {
 }
 
 export async function getActiveAlerts() {
+  // Ensure the mock state is populated/updated before we fetch
+  await evaluateAlerts()
+  
   const alerts = getMockAlerts().filter(a => a.status === 'active')
   const drugs = getMockDrugs()
   const batches = getMockBatches()

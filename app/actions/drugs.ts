@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, requireAuth } from '@/lib/supabase/server'
 import { getMockDrugs, saveMockDrug, type Drug } from '@/lib/mock-data/drugs'
 import { revalidatePath } from 'next/cache'
 
@@ -55,10 +55,8 @@ export async function getDrugs(includeInactive = false): Promise<DrugWithStock[]
 }
 
 export async function createOrUpdateDrug(data: Partial<Drug>) {
+  const { user } = await requireAuth(['admin'])
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) throw new Error('Unauthorized')
   
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
      saveMockDrug(data)
@@ -81,9 +79,8 @@ export async function createOrUpdateDrug(data: Partial<Drug>) {
 }
 
 export async function toggleDrugStatus(id: string, isActive: boolean) {
+  const { user } = await requireAuth(['admin'])
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     saveMockDrug({ id, is_active: isActive })
