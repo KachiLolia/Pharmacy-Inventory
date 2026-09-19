@@ -6,11 +6,14 @@ import { InventoryOverview } from '@/components/dashboard/inventory-overview'
 import { QuickActions } from '@/components/dashboard/quick-actions'
 import { getAdminDashboardMetrics } from '@/app/actions/dashboard'
 import { Receipt, ShoppingCart, Box, AlertTriangle, Plus, PackagePlus, FileText, Pill } from 'lucide-react'
-import { getActiveAlerts } from '@/app/actions/alerts'
+import { getDrugs } from '@/app/actions/drugs'
 
 export default async function AdminDashboard() {
   const metrics = await getAdminDashboardMetrics()
-  const alerts = await getActiveAlerts()
+  const drugs = await getDrugs(false)
+  
+  const lowStockCount = drugs.filter(d => d.has_low_stock).length
+  const expiryAlertsCount = drugs.filter(d => d.has_near_expiry || d.has_expired).length
 
   const quickActions = [
     { title: 'New Prescription / Sale', href: '/admin/pos', icon: <Plus className="w-8 h-8" /> },
@@ -40,16 +43,18 @@ export default async function AdminDashboard() {
           trendUp={true} 
         />
         <KPICard 
-          title="Inventory Value" 
-          value={`₦${metrics.inventoryValue.toLocaleString()}`} 
-          icon={<Box className="w-5 h-5" />} 
-          subtitle="Total stock value" 
+          title="Expiry Alerts" 
+          value={expiryAlertsCount.toString()} 
+          icon={<AlertTriangle className="w-5 h-5" />} 
+          isAlert={true}
+          alertVariant="warning"
+          href="/admin/drugs?tab=near_expiry"
         />
         <KPICard 
-          title="Inventory Alerts" 
-          value={alerts.length.toString()} 
+          title="Low Stock Alerts" 
+          value={lowStockCount.toString()} 
           icon={<AlertTriangle className="w-5 h-5" />} 
-          isAlert={alerts.length > 0} 
+          isAlert={true} 
           href="/admin/drugs?tab=low_stock"
         />
       </div>

@@ -11,20 +11,41 @@ interface KPICardProps {
   subtitle?: string
   href?: string
   isAlert?: boolean
+  alertVariant?: 'destructive' | 'warning'
 }
 
-export function KPICard({ title, value, icon, trend, trendUp = true, subtitle, href, isAlert = false }: KPICardProps) {
+export function KPICard({ title, value, icon, trend, trendUp = true, subtitle, href, isAlert = false, alertVariant = 'destructive' }: KPICardProps) {
+  const variant = isAlert ? alertVariant : 'default'
+  
+  const bgClasses = {
+    default: 'bg-white',
+    destructive: 'border-red-100 bg-red-50/30',
+    warning: 'border-amber-100 bg-amber-50/30'
+  }
+  
+  const iconClasses = {
+    default: 'bg-primary/10 text-primary',
+    destructive: 'bg-red-100 text-red-600',
+    warning: 'bg-amber-100 text-amber-600'
+  }
+  
+  const textClasses = {
+    default: 'text-primary',
+    destructive: 'text-red-600',
+    warning: 'text-amber-600'
+  }
+
   const content = (
-    <Card className={`border shadow-sm rounded-[24px] relative overflow-hidden h-full flex flex-col ${isAlert ? 'border-red-100 bg-red-50/30' : 'bg-white'}`}>
+    <Card className={`border shadow-sm rounded-[24px] relative overflow-hidden h-full flex flex-col ${bgClasses[variant]}`}>
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <div className={`p-2 rounded-lg ${isAlert ? 'bg-red-100 text-red-600' : 'bg-primary/10 text-primary'}`}>
+          <div className={`p-2 rounded-lg ${iconClasses[variant]}`}>
             {icon}
           </div>
           <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-          {isAlert && href && (
+          {href && (
             <div className="ml-auto">
-              <ChevronRight className="w-4 h-4 text-red-400" />
+              <ChevronRight className={`w-4 h-4 ${isAlert ? textClasses[variant] : 'text-muted-foreground'}`} />
             </div>
           )}
         </div>
@@ -49,8 +70,8 @@ export function KPICard({ title, value, icon, trend, trendUp = true, subtitle, h
           </div>
         )}
 
-        {isAlert && href && (
-          <div className="mt-3 text-sm font-medium text-red-600">
+        {href && (
+          <div className={`mt-3 text-sm font-medium ${isAlert ? textClasses[variant] : 'text-primary'}`}>
             View in Drug Catalog &rarr;
           </div>
         )}

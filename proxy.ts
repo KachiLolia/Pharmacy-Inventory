@@ -73,15 +73,19 @@ export async function proxy(request: NextRequest) {
 
   if (user) {
     // Fetch role from app_users
-    const { data: userData } = await supabase
+    const { data: userData, error: userError } = await supabase
       .from('app_users')
       .select('role, is_active')
       .eq('id', user.id)
       .single()
 
+    if (userError) {
+      console.error('Middleware app_users error:', userError)
+    }
+
     const role = userData?.role
 
-    if (!userData?.is_active && !isAuthPage) {
+    if (userData && !userData.is_active && !isAuthPage) {
         // In a real middleware, you can't easily sign out. Better to redirect to an error page or login with error.
         return NextResponse.redirect(new URL('/login?error=account_inactive', request.url))
     }

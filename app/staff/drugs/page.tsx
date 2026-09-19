@@ -30,10 +30,9 @@ export default async function StaffDrugsPage({
 
     if (activeTab === 'all') return true
     
-    const drugAlerts = alerts.filter(a => a.drug_id === drug.id)
-    if (activeTab === 'low_stock') return drugAlerts.some(a => a.type === 'low_stock')
-    if (activeTab === 'near_expiry') return drugAlerts.some(a => a.type === 'expiry' && (a.days_until_expiry ?? 0) > 0)
-    if (activeTab === 'expired') return drugAlerts.some(a => a.type === 'expiry' && (a.days_until_expiry ?? 0) <= 0)
+    if (activeTab === 'low_stock') return drug.has_low_stock
+    if (activeTab === 'near_expiry') return drug.has_near_expiry
+    if (activeTab === 'expired') return drug.has_expired
     
     return true
   })
@@ -66,9 +65,8 @@ export default async function StaffDrugsPage({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {drugs.map((drug: DrugWithStock) => {
-          const drugAlerts = alerts.filter(a => a.drug_id === drug.id)
-          const isLowStock = drugAlerts.some(a => a.type === 'low_stock')
-          const isExpiring = drugAlerts.some(a => a.type === 'expiry')
+          const isLowStock = drug.has_low_stock
+          const isExpiring = drug.has_near_expiry || drug.has_expired
           
           let cardClass = "overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 border-none rounded-[24px]"
           let topBarClass = "h-1.5 bg-primary/20 w-full"

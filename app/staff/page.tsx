@@ -5,7 +5,7 @@ import { TopSellingDrugs } from '@/components/dashboard/top-selling-drugs'
 import { InventoryOverview } from '@/components/dashboard/inventory-overview'
 import { QuickActions } from '@/components/dashboard/quick-actions'
 import { getStaffDashboardMetrics } from '@/app/actions/dashboard'
-import { getActiveAlerts } from '@/app/actions/alerts'
+import { getDrugs } from '@/app/actions/drugs'
 import { Receipt, ShoppingCart, Box, AlertTriangle, Plus, FileText, Pill } from 'lucide-react'
 import { requireAuth } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
@@ -16,7 +16,10 @@ export default async function StaffDashboard() {
   // Use a hardcoded mock staff id for testing during development, or real user id if supabase is connected
   const staffId = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://dummy.supabase.co' ? user.id : 'staff-1'
   const metrics = await getStaffDashboardMetrics(staffId)
-  const alerts = await getActiveAlerts()
+  
+  const drugs = await getDrugs(false)
+  const lowStockCount = drugs.filter(d => d.has_low_stock).length
+  const expiryAlertsCount = drugs.filter(d => d.has_near_expiry || d.has_expired).length
 
   const quickActions = [
     { title: 'New Prescription / Sale', href: '/staff/pos', icon: <Plus className="w-8 h-8" /> },
@@ -41,16 +44,19 @@ export default async function StaffDashboard() {
           icon={<ShoppingCart className="w-5 h-5" />} 
         />
         <KPICard 
-          title="Inventory Value" 
-          value={`₦${metrics.inventoryValue.toLocaleString()}`} 
-          icon={<Box className="w-5 h-5" />} 
-          subtitle="Total stock value" 
+          title="Expiry Alerts" 
+          value={expiryAlertsCount.toString()} 
+          icon={<AlertTriangle className="w-5 h-5" />} 
+          isAlert={true}
+          alertVariant="warning"
+          href="/staff/drugs?tab=near_expiry"
         />
         <KPICard 
-          title="Inventory Alerts" 
-          value={alerts.length.toString()} 
+          title="Low Stock Alerts" 
+          value={lowStockCount.toString()} 
           icon={<AlertTriangle className="w-5 h-5" />} 
-          isAlert={alerts.length > 0} 
+          isAlert={true} 
+          href="/staff/drugs?tab=low_stock"
         />
       </div>
 

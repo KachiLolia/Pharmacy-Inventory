@@ -25,8 +25,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 2. Batches
 -- Anyone can view batches
 CREATE POLICY "Anyone can view batches" ON public.batches FOR SELECT USING (auth.role() = 'authenticated');
--- Both staff (making sales) and admin (restocking) need to update batches (deduct quantities)
-CREATE POLICY "Anyone can update batches" ON public.batches FOR UPDATE USING (auth.role() = 'authenticated');
+-- Only admin can update batches directly. Staff must use RPCs for sales.
+CREATE POLICY "Only admin can update batches" ON public.batches FOR UPDATE USING (public.is_admin());
 -- Only admin can insert new batches (restocking)
 CREATE POLICY "Only admin can insert batches" ON public.batches FOR INSERT WITH CHECK (public.is_admin());
 
@@ -40,12 +40,9 @@ CREATE POLICY "Only admin can insert stock adjustments" ON public.stock_adjustme
 CREATE POLICY "Users can view accessible prescriptions" ON public.prescriptions FOR SELECT 
 USING (public.is_admin() OR created_by = auth.uid() OR status = 'pending');
 
--- Anyone can insert sales
-CREATE POLICY "Anyone can insert prescriptions" ON public.prescriptions FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
--- Users can update their own prescriptions (e.g., from pending to completed)
-CREATE POLICY "Users can update their own prescriptions" ON public.prescriptions FOR UPDATE 
-USING (public.is_admin() OR created_by = auth.uid());
+-- Only admin can directly insert/update sales (e.g. for manual adjustments). Staff must use RPCs.
+CREATE POLICY "Only admin can insert prescriptions" ON public.prescriptions FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Only admin can update prescriptions" ON public.prescriptions FOR UPDATE USING (public.is_admin());
 
 -- 5. Prescription Items
 -- Users can view items belonging to prescriptions they can access
@@ -58,7 +55,8 @@ USING (
   )
 );
 
-CREATE POLICY "Anyone can insert prescription items" ON public.prescription_items FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+-- Only admin can directly insert prescription items. Staff must use RPCs.
+CREATE POLICY "Only admin can insert prescription items" ON public.prescription_items FOR INSERT WITH CHECK (public.is_admin());
 CREATE POLICY "Only admin can update prescription items (refunds)" ON public.prescription_items FOR UPDATE USING (public.is_admin());
 
 -- 6. Refund Logs (Admin Only)

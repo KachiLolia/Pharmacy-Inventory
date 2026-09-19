@@ -35,10 +35,9 @@ export default async function AdminDrugsPage({
 
     if (activeTab === 'all') return true
     
-    const drugAlerts = alerts.filter(a => a.drug_id === drug.id)
-    if (activeTab === 'low_stock') return drugAlerts.some(a => a.type === 'low_stock')
-    if (activeTab === 'near_expiry') return drugAlerts.some(a => a.type === 'expiry' && (a.days_until_expiry ?? 0) > 0)
-    if (activeTab === 'expired') return drugAlerts.some(a => a.type === 'expiry' && (a.days_until_expiry ?? 0) <= 0)
+    if (activeTab === 'low_stock') return drug.has_low_stock
+    if (activeTab === 'near_expiry') return drug.has_near_expiry
+    if (activeTab === 'expired') return drug.has_expired
     
     return true
   })
@@ -91,9 +90,8 @@ export default async function AdminDrugsPage({
             </TableHeader>
             <TableBody>
               {drugs.map((drug: DrugWithStock) => {
-                const drugAlerts = alerts.filter(a => a.drug_id === drug.id)
-                const isLowStock = drugAlerts.some(a => a.type === 'low_stock')
-                const isExpiring = drugAlerts.some(a => a.type === 'expiry')
+                const isLowStock = drug.has_low_stock
+                const isExpiring = drug.has_near_expiry || drug.has_expired
                 
                 let rowClassName = !drug.is_active ? "opacity-60 bg-muted/20" : "hover:bg-muted/10 transition-colors"
                 if (drug.is_active && (isLowStock || isExpiring)) {
@@ -172,9 +170,8 @@ export default async function AdminDrugsPage({
       {/* Mobile Card View */}
       <div className="md:hidden grid grid-cols-1 gap-4">
         {drugs.map((drug: DrugWithStock) => {
-          const drugAlerts = alerts.filter(a => a.drug_id === drug.id)
-          const isLowStock = drugAlerts.some(a => a.type === 'low_stock')
-          const isExpiring = drugAlerts.some(a => a.type === 'expiry')
+          const isLowStock = drug.has_low_stock
+          const isExpiring = drug.has_near_expiry || drug.has_expired
           
           let cardClass = "overflow-hidden shadow-sm transition-all duration-300 border bg-card rounded-xl"
           let topBarClass = "h-1.5 bg-primary/20 w-full"

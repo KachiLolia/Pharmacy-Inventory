@@ -51,12 +51,6 @@ export async function DashboardHeader({ role }: DashboardHeaderProps) {
         <div className="hidden sm:flex items-center gap-2 px-4 py-2 border rounded-full bg-white text-sm font-medium">
           <span className="text-muted-foreground">{today}</span>
         </div>
-
-        {/* Month Selector */}
-        <select className="border text-sm font-medium rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer bg-white">
-          <option>This Month</option>
-          <option>Last Month</option>
-        </select>
       </div>
     </div>
   )
