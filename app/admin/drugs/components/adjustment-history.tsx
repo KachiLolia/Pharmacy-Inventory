@@ -6,9 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { getAdjustmentsForBatch } from '@/app/actions/stock-adjustments'
 import { Loader2, History } from 'lucide-react'
-import type { Batch } from '@/lib/mock-data/batches'
+import type {  Batch  } from '@/lib/types'
 import type { DrugWithStock } from '@/app/actions/drugs'
-import type { StockAdjustment } from '@/lib/mock-data/stock-adjustments'
+import type {  StockAdjustment  } from '@/lib/types'
 
 export function AdjustmentHistoryDialog({ children, batch, drug }: { children: React.ReactElement, batch: Batch, drug: DrugWithStock }) {
   const [open, setOpen] = useState(false)

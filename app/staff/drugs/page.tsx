@@ -3,7 +3,7 @@ import { getActiveAlerts } from '@/app/actions/alerts'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { SearchInput } from '@/components/ui/search-input'
-// import type { Drug } from '@/lib/mock-data/drugs'
+// import type {  Drug  } from '@/lib/types'
 
 import Link from 'next/link'
 

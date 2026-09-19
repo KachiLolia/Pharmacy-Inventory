@@ -11,8 +11,8 @@ export default async function StaffSalesPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight">My Sales Records</h2>
-        <p className="text-muted-foreground text-sm">View your historically completed transactions.</p>
+        <h2 className="text-2xl font-semibold tracking-tight">Sales Records</h2>
+        <p className="text-muted-foreground text-sm">Historical completed transactions and receipts.</p>
       </div>
 
       <SalesHistoryTable sales={sales} drugs={drugs} />

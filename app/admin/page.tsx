@@ -8,6 +8,8 @@ import { getAdminDashboardMetrics } from '@/app/actions/dashboard'
 import { Receipt, ShoppingCart, Box, AlertTriangle, Plus, PackagePlus, FileText, Pill } from 'lucide-react'
 import { getDrugs } from '@/app/actions/drugs'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminDashboard() {
   const metrics = await getAdminDashboardMetrics()
   const drugs = await getDrugs(false)

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { createOrUpdateDrug } from '@/app/actions/drugs'
-import type { Drug } from '@/lib/mock-data/drugs'
+import type {  Drug  } from '@/lib/types'
 import { Loader2 } from 'lucide-react'
 
 export function DrugFormDialog({ children, drug }: { children: React.ReactNode, drug?: Drug }) {

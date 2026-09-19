@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { adjustStock } from '@/app/actions/stock-adjustments'
 import { Loader2, ArrowRightLeft } from 'lucide-react'
-import type { Batch } from '@/lib/mock-data/batches'
+import type {  Batch  } from '@/lib/types'
 import type { DrugWithStock } from '@/app/actions/drugs'
 
 const REASONS = [

@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { getBatchesForDrug } from '@/app/actions/batches'
-import type { Batch } from '@/lib/mock-data/batches'
+import type {  Batch  } from '@/lib/types'
 import type { DrugWithStock } from '@/app/actions/drugs'
 import { AdjustmentFormDialog } from './adjustment-form'
 import { AdjustmentHistoryDialog } from './adjustment-history'

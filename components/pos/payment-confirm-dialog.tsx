@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { confirmPayment, getPrescriptionItems } from '@/app/actions/pos'
-import type { Prescription, PrescriptionItem } from '@/lib/mock-data/prescriptions'
+import type {  Prescription, PrescriptionItem  } from '@/lib/types'
 import type { DrugWithStock } from '@/app/actions/drugs'
 import { ReceiptPrinter } from './receipt-printer'
 import { Loader2, CheckCircle2, CreditCard, Banknote, Building, Printer } from 'lucide-react'

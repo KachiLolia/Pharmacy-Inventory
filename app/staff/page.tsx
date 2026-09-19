@@ -10,6 +10,8 @@ import { Receipt, ShoppingCart, Box, AlertTriangle, Plus, FileText, Pill } from 
 import { requireAuth } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
+export const dynamic = 'force-dynamic'
+
 export default async function StaffDashboard() {
   const { user } = await requireAuth(['staff'])
   
@@ -34,13 +36,13 @@ export default async function StaffDashboard() {
       {/* Row 1: KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KPICard 
-          title="Your Revenue Today" 
-          value={`₦${metrics.myRevenueToday.toLocaleString()}`} 
+          title="Total Revenue Today" 
+          value={`₦${metrics.totalRevenueToday.toLocaleString()}`} 
           icon={<Receipt className="w-5 h-5" />} 
         />
         <KPICard 
           title="Sales Completed Today" 
-          value={metrics.myTransactionCountToday.toLocaleString()} 
+          value={metrics.transactionCountToday.toLocaleString()} 
           icon={<ShoppingCart className="w-5 h-5" />} 
         />
         <KPICard 

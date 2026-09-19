@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { getSettings, updateSettings } from '@/app/actions/settings'
-import { SystemSettings } from '@/lib/mock-data/settings'
+import {  SystemSettings  } from '@/lib/types'
 import { Settings as SettingsIcon, User, Store, Package, CreditCard, RotateCcw, Bell } from 'lucide-react'
 
 export default function SettingsPage() {

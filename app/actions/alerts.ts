@@ -1,31 +1,31 @@
 'use server'
 
-import { getMockDrugs } from '@/lib/mock-data/drugs'
-import { getMockBatches } from '@/lib/mock-data/batches'
-import { getMockSettings } from '@/lib/mock-data/settings'
-import { getMockAlerts, saveMockAlert, updateMockAlert, AlertLog } from '@/lib/mock-data/alerts'
-
-// For real supabase deployment we would use createClient() but we rely on mock DB logic for now
-// until Supabase is deployed.
+import { createClient } from '@/lib/supabase/server'
+import { getSettings } from './settings'
 
 export async function evaluateAlerts() {
-  const drugs = getMockDrugs().filter(d => d.is_active)
-  const batches = getMockBatches()
-  const settings = getMockSettings()
-  const alerts = getMockAlerts()
-
-  const activeAlerts = alerts.filter(a => a.status === 'active')
-  const newAlerts: AlertLog[] = []
+  const supabase = await createClient()
+  
+  const { data: drugs, error: drugsError } = await supabase.from('drugs').select('*').eq('is_active', true)
+  if (drugsError) throw new Error(drugsError.message)
+    
+  const { data: batches, error: batchesError } = await supabase.from('batches').select('*')
+  if (batchesError) throw new Error(batchesError.message)
+    
+  const settings = await getSettings()
+  
+  const { data: activeAlerts, error: alertsError } = await supabase.from('alert_logs').select('*').eq('status', 'active')
+  if (alertsError) throw new Error(alertsError.message)
 
   const now = new Date()
+  let newAlertsCount = 0
 
   for (const drug of drugs) {
-    const drugBatches = batches.filter(b => b.drug_id === drug.id)
+    const drugBatches = batches.filter((b: any) => b.drug_id === drug.id)
     
     // 1. Low Stock Evaluation
     let totalAvailable = 0
     for (const batch of drugBatches) {
-      // Exclude expired batches from available stock calculation
       const isExpired = new Date(batch.expiry_date) <= now
       if (!isExpired) {
         totalAvailable += Math.max(0, batch.quantity_remaining - (batch.reserved_quantity || 0))
@@ -33,25 +33,23 @@ export async function evaluateAlerts() {
     }
 
     const lowStockThreshold = drug.low_stock_threshold ?? settings.global_low_stock_threshold
-    
-    const existingLowStockAlert = activeAlerts.find(a => a.type === 'low_stock' && a.drug_id === drug.id)
+    const existingLowStockAlert = activeAlerts?.find((a: any) => a.type === 'low_stock' && a.drug_id === drug.id)
 
     if (totalAvailable <= lowStockThreshold) {
       if (!existingLowStockAlert) {
-        newAlerts.push(saveMockAlert({
+        await supabase.from('alert_logs').insert({
           type: 'low_stock',
           drug_id: drug.id,
-          status: 'active',
-          notified_via_email: false,
-          notified_via_sms: false
-        }))
+          status: 'active'
+        })
+        newAlertsCount++
       }
     } else {
       if (existingLowStockAlert) {
-        updateMockAlert(existingLowStockAlert.id, {
+        await supabase.from('alert_logs').update({
           status: 'resolved',
           resolved_at: now.toISOString()
-        })
+        }).eq('id', existingLowStockAlert.id)
       }
     }
 
@@ -60,68 +58,73 @@ export async function evaluateAlerts() {
     const expiryThresholdMs = expiryWarningDays * 24 * 60 * 60 * 1000
 
     for (const batch of drugBatches) {
-      if (batch.quantity_remaining <= 0) continue // Ignored if already empty
+      if (batch.quantity_remaining <= 0) continue
 
       const timeUntilExpiryMs = new Date(batch.expiry_date).getTime() - now.getTime()
-      const existingExpiryAlert = activeAlerts.find(
-        a => a.type === 'expiry' && a.drug_id === drug.id && a.batch_id === batch.id
+      const existingExpiryAlert = activeAlerts?.find(
+        (a: any) => a.type === 'expiry' && a.drug_id === drug.id && a.batch_id === batch.id
       )
 
       if (timeUntilExpiryMs <= expiryThresholdMs) {
         if (!existingExpiryAlert) {
-          newAlerts.push(saveMockAlert({
+          await supabase.from('alert_logs').insert({
             type: 'expiry',
             drug_id: drug.id,
             batch_id: batch.id,
-            status: 'active',
-            notified_via_email: false,
-            notified_via_sms: false
-          }))
+            status: 'active'
+          })
+          newAlertsCount++
         }
       } else {
         if (existingExpiryAlert) {
-          updateMockAlert(existingExpiryAlert.id, {
+          await supabase.from('alert_logs').update({
             status: 'resolved',
             resolved_at: now.toISOString()
-          })
+          }).eq('id', existingExpiryAlert.id)
         }
       }
     }
   }
 
   // Also resolve expiry alerts for batches that hit 0 quantity
-  const activeExpiryAlerts = activeAlerts.filter(a => a.type === 'expiry')
+  const activeExpiryAlerts = activeAlerts?.filter((a: any) => a.type === 'expiry') || []
   for (const alert of activeExpiryAlerts) {
-    const batch = batches.find(b => b.id === alert.batch_id)
+    const batch = batches.find((b: any) => b.id === alert.batch_id)
     if (!batch || batch.quantity_remaining <= 0) {
-      updateMockAlert(alert.id, {
+      await supabase.from('alert_logs').update({
         status: 'resolved',
         resolved_at: now.toISOString()
-      })
+      }).eq('id', alert.id)
     }
   }
 
-  return { success: true, newAlerts }
+  return { success: true, newAlertsCount }
 }
 
 export async function getActiveAlerts() {
-  // Ensure the mock state is populated/updated before we fetch
   await evaluateAlerts()
   
-  const alerts = getMockAlerts().filter(a => a.status === 'active')
-  const drugs = getMockDrugs()
-  const batches = getMockBatches()
+  const supabase = await createClient()
+  
+  const { data: alerts, error: alertsError } = await supabase.from('alert_logs').select('*').eq('status', 'active')
+  if (alertsError) throw new Error(alertsError.message)
+    
+  const { data: drugs, error: drugsError } = await supabase.from('drugs').select('id, name, dose')
+  if (drugsError) throw new Error(drugsError.message)
+    
+  const { data: batches, error: batchesError } = await supabase.from('batches').select('*')
+  if (batchesError) throw new Error(batchesError.message)
 
   const viewData: any[] = []
   const now = new Date()
 
   for (const alert of alerts) {
-    const drug = drugs.find(d => d.id === alert.drug_id)
+    const drug = drugs.find((d: any) => d.id === alert.drug_id)
     if (!drug) continue
 
     if (alert.type === 'low_stock') {
-      const drugBatches = batches.filter(b => b.drug_id === drug.id && new Date(b.expiry_date) > now)
-      const totalAvailable = drugBatches.reduce((sum, b) => sum + Math.max(0, b.quantity_remaining - (b.reserved_quantity || 0)), 0)
+      const drugBatches = batches.filter((b: any) => b.drug_id === drug.id && new Date(b.expiry_date) > now)
+      const totalAvailable = drugBatches.reduce((sum: number, b: any) => sum + Math.max(0, b.quantity_remaining - (b.reserved_quantity || 0)), 0)
       
       viewData.push({
         id: alert.id,
@@ -132,7 +135,7 @@ export async function getActiveAlerts() {
         actionable: true
       })
     } else if (alert.type === 'expiry' && alert.batch_id) {
-      const batch = batches.find(b => b.id === alert.batch_id)
+      const batch = batches.find((b: any) => b.id === alert.batch_id)
       if (!batch) continue
       
       const timeDiff = new Date(batch.expiry_date).getTime() - now.getTime()

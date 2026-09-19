@@ -8,7 +8,7 @@ import { DrugFormDialog } from './components/drug-form'
 import { RestockFormDialog } from './components/restock-form'
 import { BatchListDialog } from './components/batch-list'
 import { Plus } from 'lucide-react'
-// import type { Drug } from '@/lib/mock-data/drugs'
+// import type {  Drug  } from '@/lib/types'
 
 import Link from 'next/link'
 

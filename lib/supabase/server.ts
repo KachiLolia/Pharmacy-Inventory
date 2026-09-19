@@ -77,3 +77,22 @@ export async function requireAuth(allowedRoles?: ('admin' | 'staff')[]) {
 
   return { user, role: userData.role }
 }
+
+export async function createAdminClient() {
+  const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
+  
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://dummy.supabase.co') {
+    return await createClient() // fallback
+  }
+
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  )
+}

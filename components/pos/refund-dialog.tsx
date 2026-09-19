@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Loader2, RefreshCcw, AlertTriangle } from 'lucide-react'
-import type { Prescription, PrescriptionItem } from '@/lib/mock-data/prescriptions'
+import type {  Prescription, PrescriptionItem  } from '@/lib/types'
 import type { DrugWithStock } from '@/app/actions/drugs'
 import { processRefund } from '@/app/actions/refunds'
 

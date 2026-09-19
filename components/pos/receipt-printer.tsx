@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import type { Prescription, PrescriptionItem } from '@/lib/mock-data/prescriptions'
+import type {  Prescription, PrescriptionItem  } from '@/lib/types'
 import type { DrugWithStock } from '@/app/actions/drugs'
 import { getSettings } from '@/app/actions/settings'
-import type { SystemSettings } from '@/lib/mock-data/settings'
+import type {  SystemSettings  } from '@/lib/types'
 
 interface ReceiptPrinterProps {
   prescription: Prescription
@@ -29,14 +29,14 @@ export function ReceiptPrinter({ prescription, items, drugs, visible = false }: 
   }, [])
 
   return (
-    <div className={`receipt-container text-black bg-white w-full max-w-[80mm] mx-auto p-4 text-xs font-mono ${visible ? 'block border shadow-sm' : 'hidden print:block'}`}>
+    <div className={`receipt-container text-black bg-white w-full max-w-[80mm] mx-auto p-3 text-[11px] leading-tight font-mono ${visible ? 'block border shadow-sm' : 'hidden print:block'}`}>
       <div className="text-center mb-4">
         {settings?.pharmacy_logo_url ? (
           <img src={settings.pharmacy_logo_url} alt="Logo" className="h-10 mx-auto mb-2 grayscale" />
         ) : null}
-        <h2 className="text-lg font-bold uppercase mb-1">{settings?.pharmacy_name || 'Pharmacy POS'}</h2>
-        <p className="whitespace-pre-wrap">{settings?.pharmacy_address || '123 Health Ave, Medical District'}</p>
-        <p>Tel: {settings?.pharmacy_phone || '+234 123 456 7890'}</p>
+        <h2 className="text-base font-bold uppercase mb-1">{settings?.pharmacy_name || 'Pharmacy POS'}</h2>
+        <p className="whitespace-pre-wrap text-[10px]">{settings?.pharmacy_address || '123 Health Ave, Medical District'}</p>
+        <p className="text-[10px]">Tel: {settings?.pharmacy_phone || '+234 123 456 7890'}</p>
       </div>
 
       <div className="border-b border-black border-dashed pb-2 mb-2 space-y-1">
@@ -50,7 +50,7 @@ export function ReceiptPrinter({ prescription, items, drugs, visible = false }: 
         </div>
         <div className="flex justify-between">
           <span>Cashier:</span>
-          <span className="truncate max-w-[120px]">{prescription.created_by}</span>
+          <span>{prescription.created_by.slice(0, 8)}</span>
         </div>
       </div>
 
@@ -68,7 +68,7 @@ export function ReceiptPrinter({ prescription, items, drugs, visible = false }: 
               const drug = drugs.find(d => d.id === item.drug_id)
               return (
                 <tr key={item.id}>
-                  <td className="py-1 truncate pr-1">
+                  <td className="py-1 pr-1 break-words max-w-[40mm]">
                     {drug ? `${drug.name} ${drug.dose}` : 'Unknown Item'}
                     {item.refunded_quantity ? (
                       <div className="text-[9px] text-gray-500 uppercase">
@@ -133,6 +133,10 @@ export function ReceiptPrinter({ prescription, items, drugs, visible = false }: 
             left: 0;
             top: 0;
             width: 100%;
+            margin: 0;
+            padding: 2mm;
+            box-sizing: border-box;
+            font-size: 10px !important;
           }
           @page {
             size: 80mm auto;

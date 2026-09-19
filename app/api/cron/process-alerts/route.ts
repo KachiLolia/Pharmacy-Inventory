@@ -1,25 +1,25 @@
 import { NextResponse } from 'next/server'
 import { evaluateAlerts } from '@/app/actions/alerts'
-import { getMockAlerts, updateMockAlert } from '@/lib/mock-data/alerts'
-import { getMockDrugs } from '@/lib/mock-data/drugs'
-import { getMockBatches } from '@/lib/mock-data/batches'
+import { createClient } from '@/lib/supabase/server'
 
 // This endpoint is designed to be hit by a scheduled Vercel Cron job
 export async function GET(request: Request) {
   try {
     // 1. Evaluate latest inventory state
     await evaluateAlerts()
+    
+    const supabase = await createClient()
 
     // 2. Find alerts that haven't been notified yet
-    const alerts = getMockAlerts()
-    const drugs = getMockDrugs()
-    const batches = getMockBatches()
-    
-    const unnotifiedAlerts = alerts.filter(a => 
-      a.status === 'active' && (!a.notified_via_email || !a.notified_via_sms)
-    )
+    const { data: unnotifiedAlerts, error: alertsError } = await supabase
+      .from('alert_logs')
+      .select('*, drugs(name, dose), batches(batch_number, expiry_date, quantity_remaining, reserved_quantity)')
+      .eq('status', 'active')
+      .or('notified_via_email.eq.false,notified_via_sms.eq.false')
 
-    if (unnotifiedAlerts.length === 0) {
+    if (alertsError) throw new Error(alertsError.message)
+
+    if (!unnotifiedAlerts || unnotifiedAlerts.length === 0) {
       return NextResponse.json({ message: 'No new alerts to notify' })
     }
 
@@ -28,31 +28,28 @@ export async function GET(request: Request) {
 
     // 3. Aggregate payload
     for (const alert of unnotifiedAlerts) {
-      const drug = drugs.find(d => d.id === alert.drug_id)
-      if (!drug) continue
+      const drugName = alert.drugs ? `${alert.drugs.name} ${alert.drugs.dose}` : 'Unknown Drug'
 
       if (alert.type === 'low_stock') {
-        const drugBatches = batches.filter(b => b.drug_id === drug.id && new Date(b.expiry_date) > new Date())
-        const totalAvailable = drugBatches.reduce((sum, b) => sum + Math.max(0, b.quantity_remaining - (b.reserved_quantity || 0)), 0)
-        
-        emailLines.push(`- LOW STOCK: ${drug.name} ${drug.dose} (${totalAvailable} units remaining)`)
-        smsLines.push(`Low Stock: ${drug.name} (${totalAvailable} left)`)
-      } else if (alert.type === 'expiry' && alert.batch_id) {
-        const batch = batches.find(b => b.id === alert.batch_id)
-        if (!batch) continue
-        
-        const timeDiff = new Date(batch.expiry_date).getTime() - new Date().getTime()
+        // We'd ideally sum all batches, but for simplicity in the alert log, we just state low stock
+        emailLines.push(`- LOW STOCK: ${drugName}`)
+        smsLines.push(`Low Stock: ${drugName}`)
+      } else if (alert.type === 'expiry' && alert.batch_id && alert.batches) {
+        const timeDiff = new Date(alert.batches.expiry_date).getTime() - new Date().getTime()
         const days = Math.ceil(timeDiff / (1000 * 3600 * 24))
         
-        emailLines.push(`- EXPIRING SOON: ${drug.name} ${drug.dose} [Batch ${batch.batch_number || 'N/A'}] in ${days} days.`)
-        smsLines.push(`Expiry: ${drug.name} Batch ${batch.batch_number || 'N/A'} in ${days} days`)
+        emailLines.push(`- EXPIRING SOON: ${drugName} [Batch ${alert.batches.batch_number || 'N/A'}] in ${days} days.`)
+        smsLines.push(`Expiry: ${drugName} Batch ${alert.batches.batch_number || 'N/A'} in ${days} days`)
       }
 
-      // Mark as notified in memory
-      updateMockAlert(alert.id, {
-        notified_via_email: true,
-        notified_via_sms: true
-      })
+      // Mark as notified
+      await supabase
+        .from('alert_logs')
+        .update({
+          notified_via_email: true,
+          notified_via_sms: true
+        })
+        .eq('id', alert.id)
     }
 
     // 4. Mock Delivery (Brevo & Termii)

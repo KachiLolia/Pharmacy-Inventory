@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { RefreshCcw } from 'lucide-react'
-import type { RefundLog, Prescription } from '@/lib/mock-data/prescriptions'
+import type {  RefundLog, Prescription  } from '@/lib/types'
 
 interface RefundsTableProps {
   logs: RefundLog[]

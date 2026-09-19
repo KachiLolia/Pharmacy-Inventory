@@ -1,14 +1,12 @@
 'use server'
 
 import { createClient, requireAuth } from '@/lib/supabase/server'
-import { getMockBatchesForDrug, saveMockBatch, type Batch } from '@/lib/mock-data/batches'
+import type { Batch } from '@/lib/types'
 import { revalidatePath } from 'next/cache'
 import { evaluateAlerts } from './alerts'
 
 export async function getBatchesForDrug(drugId: string) {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    return getMockBatchesForDrug(drugId)
-  }
+  // Fallback removed
 
   const supabase = await createClient()
   const { data, error } = await supabase
@@ -25,13 +23,7 @@ export async function restockDrug(data: Partial<Batch>) {
   const { user } = await requireAuth(['admin'])
   const supabase = await createClient()
   
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    saveMockBatch({ ...data, received_by: user.id })
-    revalidatePath('/admin/drugs')
-    revalidatePath('/staff/drugs')
-    await evaluateAlerts()
-    return { success: true }
-  }
+  // Fallback removed
 
   // 1. Try to find a matching batch to merge
   const { data: existingBatch } = await supabase
