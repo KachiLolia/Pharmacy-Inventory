@@ -36,15 +36,28 @@ CREATE POLICY "Only admin can insert stock adjustments" ON public.stock_adjustme
 -- No updates allowed on stock adjustments (audit log)
 
 -- 4. Prescriptions (Sales)
--- Anyone can view sales
-CREATE POLICY "Anyone can view prescriptions" ON public.prescriptions FOR SELECT USING (auth.role() = 'authenticated');
+-- Staff can view their own and pending sales; Admin can view all
+CREATE POLICY "Users can view accessible prescriptions" ON public.prescriptions FOR SELECT 
+USING (public.is_admin() OR created_by = auth.uid() OR status = 'pending');
+
 -- Anyone can insert sales
 CREATE POLICY "Anyone can insert prescriptions" ON public.prescriptions FOR INSERT WITH CHECK (auth.role() = 'authenticated');
--- Both admin and staff might need to update a pending prescription to completed
-CREATE POLICY "Anyone can update prescriptions" ON public.prescriptions FOR UPDATE USING (auth.role() = 'authenticated');
+
+-- Users can update their own prescriptions (e.g., from pending to completed)
+CREATE POLICY "Users can update their own prescriptions" ON public.prescriptions FOR UPDATE 
+USING (public.is_admin() OR created_by = auth.uid());
 
 -- 5. Prescription Items
-CREATE POLICY "Anyone can view prescription items" ON public.prescription_items FOR SELECT USING (auth.role() = 'authenticated');
+-- Users can view items belonging to prescriptions they can access
+CREATE POLICY "Users can view accessible prescription items" ON public.prescription_items FOR SELECT 
+USING (
+  public.is_admin() OR 
+  EXISTS (
+    SELECT 1 FROM public.prescriptions p 
+    WHERE p.id = prescription_items.prescription_id AND (p.created_by = auth.uid() OR p.status = 'pending')
+  )
+);
+
 CREATE POLICY "Anyone can insert prescription items" ON public.prescription_items FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 CREATE POLICY "Only admin can update prescription items (refunds)" ON public.prescription_items FOR UPDATE USING (public.is_admin());
 
