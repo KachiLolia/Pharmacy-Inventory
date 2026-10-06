@@ -17,7 +17,9 @@ import {
   Receipt,
   RefreshCcw,
   AlertCircle,
-  BarChart3
+  BarChart3,
+  Store,
+  Globe
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -35,16 +37,20 @@ const adminLinks = [
   { href: '/admin/sales', icon: Receipt, label: 'Sales Records' },
   { href: '/admin/refunds', icon: RefreshCcw, label: 'Refunds' },
   { href: '/admin/drugs', icon: Pill, label: 'Drug Catalog' },
+  { href: '/admin/otc', icon: Store, label: 'OTC Store' },
+  { href: '/admin/otc-orders', icon: PackageSearch, label: 'OTC Orders' },
   { href: '/admin/staff', icon: Users, label: 'Staff Management' },
   { href: '/admin/reports', icon: BarChart3, label: 'Reports & Recon' },
-  { href: '/admin/settings', icon: Settings, label: 'Settings' },
+  { href: '/admin/settings', icon: Settings, label: 'App Settings' },
+  { href: '/admin/site-settings', icon: Globe, label: 'Site Settings' },
 ]
 
 const staffLinks = [
   { href: '/staff', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/staff/pos', icon: ShoppingCart, label: 'POS / Prescriptions' },
   { href: '/staff/sales', icon: Receipt, label: 'Sales Records' },
-  { href: '/staff/drugs', icon: PackageSearch, label: 'Drug Catalog' },
+  { href: '/staff/drugs', icon: Pill, label: 'Drug Catalog' },
+  { href: '/staff/otc-orders', icon: PackageSearch, label: 'OTC Orders' },
 ]
 
 function NavContent({ 

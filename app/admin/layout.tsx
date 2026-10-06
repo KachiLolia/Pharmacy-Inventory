@@ -2,6 +2,7 @@ import { AppSidebar } from '@/components/layout/app-sidebar'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getMockUser } from '@/lib/mock-auth'
+import { AgentCopilot } from '@/components/agent-copilot'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // Wait, layout receives children. Let's do the auth check.
@@ -30,10 +31,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-background">
       <AppSidebar role="admin" />
-      <main className="flex-1 overflow-y-auto p-4 md:p-8">
+      <main className="flex-1 overflow-y-auto p-4 md:p-8 relative">
         <div className="mx-auto w-full max-w-7xl">
           {children}
         </div>
+        <AgentCopilot />
       </main>
     </div>
   )

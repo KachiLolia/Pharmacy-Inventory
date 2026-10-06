@@ -2,6 +2,9 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { getMockUser } from '../mock-auth'
 
+let mockWhatsappNumber = '+2348104731632' // default to the user's number for convenience
+const mockWhatsappSessions: Record<string, any> = {}
+
 export async function createClient() {
   const cookieStore = await cookies()
 
@@ -14,19 +17,59 @@ export async function createClient() {
           return { data: { user }, error: null }
         },
       },
-      from: (table: string) => ({
-        select: () => ({
-          eq: () => ({
-            single: async () => {
-              const user = await getMockUser()
-              if (table === 'app_users' && user) {
-                return { data: { role: user.role, is_active: true }, error: null }
-              }
-              return { data: null, error: null }
+      from: (table: string) => {
+        const chain: any = {
+          select: () => chain,
+          eq: () => chain,
+          order: () => chain,
+          gte: () => chain,
+          lte: () => chain,
+          insert: (payload: any) => {
+            if (table === 'whatsapp_sessions') {
+              mockWhatsappSessions[payload.user_id] = { ...payload, id: 'mock-session', updated_at: new Date().toISOString() }
             }
-          })
-        })
-      })
+            return chain
+          },
+          update: (payload: any) => {
+            if (table === 'app_users' && payload.whatsapp_number) {
+              mockWhatsappNumber = payload.whatsapp_number
+            }
+            if (table === 'whatsapp_sessions') {
+              // Just update the first session for mock
+              const firstKey = Object.keys(mockWhatsappSessions)[0]
+              if (firstKey) {
+                mockWhatsappSessions[firstKey] = { ...mockWhatsappSessions[firstKey], ...payload, updated_at: new Date().toISOString() }
+              }
+            }
+            return chain
+          },
+          delete: () => chain,
+          single: async () => {
+            if (table === 'app_users') {
+              return { 
+                data: { 
+                  id: 'mock-admin-id', 
+                  role: 'admin', 
+                  is_active: true, 
+                  whatsapp_number: mockWhatsappNumber 
+                }, 
+                error: null 
+              }
+            }
+            if (table === 'whatsapp_sessions') {
+              // We don't have the user_id in single() easily, so just return the first or default
+              const firstSession = Object.values(mockWhatsappSessions)[0]
+              return { data: firstSession || null, error: null }
+            }
+            return { data: null, error: null }
+          },
+          then: (resolve: any) => resolve({ data: [], error: null })
+        }
+        return chain
+      },
+      rpc: async (fnName: string, args: any) => {
+        return { data: 'mock-id-1234', error: null }
+      }
     } as unknown as ReturnType<typeof createServerClient>
   }
 

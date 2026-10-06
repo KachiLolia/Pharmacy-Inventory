@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { getSettings, updateSettings } from '@/app/actions/settings'
+import { getSettings, updateSettings, getAdminProfile, updateAdminWhatsAppNumber } from '@/app/actions/settings'
 import {  SystemSettings  } from '@/lib/types'
 import { Settings as SettingsIcon, User, Store, Package, CreditCard, RotateCcw, Bell } from 'lucide-react'
 
@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [message, setMessage] = useState({ text: '', type: '' })
 
   const [settings, setSettings] = useState<SystemSettings | null>(null)
+  const [whatsappNumber, setWhatsappNumber] = useState('')
   
   // To simulate password changing without persisting
   const [password, setPassword] = useState('')
@@ -29,6 +30,10 @@ export default function SettingsPage() {
       try {
         const data = await getSettings()
         setSettings(data)
+        const profile = await getAdminProfile()
+        if (profile?.whatsapp_number) {
+          setWhatsappNumber(profile.whatsapp_number)
+        }
       } catch (err) {
         setMessage({ text: 'Failed to load settings', type: 'error' })
       } finally {
@@ -54,6 +59,9 @@ export default function SettingsPage() {
     setMessage({ text: '', type: '' })
     try {
       await updateSettings(settings)
+      if (whatsappNumber) {
+        await updateAdminWhatsAppNumber(whatsappNumber)
+      }
       setMessage({ text: 'Settings saved successfully.', type: 'success' })
       setPassword('')
       setConfirmPassword('')
@@ -132,9 +140,14 @@ export default function SettingsPage() {
                     <Label htmlFor="admin_email">Email Address</Label>
                     <Input id="admin_email" type="email" value={settings.admin_email} onChange={e => handleChange('admin_email', e.target.value)} />
                   </div>
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-2">
                     <Label htmlFor="admin_phone">Phone Number</Label>
                     <Input id="admin_phone" type="tel" value={settings.admin_phone} onChange={e => handleChange('admin_phone', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="whatsapp_number">WhatsApp Number (For AI Agent)</Label>
+                    <Input id="whatsapp_number" type="tel" placeholder="+234..." value={whatsappNumber} onChange={e => setWhatsappNumber(e.target.value)} />
+                    <p className="text-xs text-muted-foreground">Required to use the WhatsApp AI Agent securely.</p>
                   </div>
                 </div>
 

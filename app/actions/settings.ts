@@ -9,8 +9,8 @@ export async function getSettings(): Promise<SystemSettings> {
   const supabase = await createClient()
   const { data, error } = await supabase.from('system_settings').select('*').eq('id', 1).single()
   
-  if (error) {
-    // If the record doesn't exist for some reason, return safe defaults
+  if (error || !data) {
+    // If the record doesn't exist for some reason or mock mode returns null, return safe defaults
     return {
       id: 1,
       admin_name: 'System Admin',
@@ -58,5 +58,31 @@ export async function updateSettings(updates: Partial<SystemSettings>) {
   revalidatePath('/admin')
   revalidatePath('/staff')
   
+  return { success: true }
+}
+
+export async function getAdminProfile() {
+  const { user } = await requireAuth(['admin'])
+  const supabase = await createClient()
+
+  const { data } = await supabase
+    .from('app_users')
+    .select('whatsapp_number')
+    .eq('id', user.id)
+    .single()
+
+  return data
+}
+
+export async function updateAdminWhatsAppNumber(whatsappNumber: string) {
+  const { user } = await requireAuth(['admin'])
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('app_users')
+    .update({ whatsapp_number: whatsappNumber })
+    .eq('id', user.id)
+
+  if (error) throw new Error(error.message)
   return { success: true }
 }
