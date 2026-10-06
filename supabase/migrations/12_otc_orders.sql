@@ -1,5 +1,13 @@
 -- Stage 14: OTC Storefront Orders
 
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TYPE public.fulfillment_method AS ENUM ('pickup', 'delivery');
 CREATE TYPE public.payment_status AS ENUM ('pending', 'paid', 'failed');
 CREATE TYPE public.order_status AS ENUM ('pending', 'processing', 'ready_for_pickup', 'out_for_delivery', 'completed', 'cancelled');
