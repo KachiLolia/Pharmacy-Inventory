@@ -114,7 +114,7 @@ export function OrdersTable({ orders, role }: { orders: OTCOrder[], role: 'admin
                         ) : null}
                         <Select 
                           value={order.order_status} 
-                          onValueChange={(val) => handleStatusChange(order.id as string, val)}
+                          onValueChange={(val) => handleStatusChange(order.id as string, val as string)}
                           disabled={updating === order.id || order.order_status === 'completed' || order.order_status === 'cancelled'}
                         >
                           <SelectTrigger className="h-8 w-[140px] text-xs">
