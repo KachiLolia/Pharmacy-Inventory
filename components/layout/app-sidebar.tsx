@@ -91,7 +91,7 @@ function NavContent({
       )}
     </div>
 
-    <div className="flex-1 overflow-y-auto py-6 px-3">
+    <div className="flex-1 overflow-y-auto py-6 px-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       <nav className="space-y-1">
         {links.map((link) => {
           const isActive = pathname === link.href
