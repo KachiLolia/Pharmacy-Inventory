@@ -17,8 +17,13 @@ export async function sendMessageToAgent(message: string) {
     if (mockUser) userId = mockUser.id
   }
 
-  const response = await processAgentMessage(userId, message)
-  return response
+  try {
+    const response = await processAgentMessage(userId, message)
+    return response
+  } catch (error: any) {
+    console.error('Agent Action Error:', error)
+    throw new Error(error.message || 'Unknown server error')
+  }
 }
 
 export async function clearAgentHistory() {

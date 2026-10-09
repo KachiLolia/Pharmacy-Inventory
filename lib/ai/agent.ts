@@ -64,7 +64,7 @@ export async function processAgentMessage(userId: string, incomingText: string):
   for (let step = 0; step < 5; step++) {
     // 3. Call Gemini via Vercel AI SDK
     const result = await generateText({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-3.8-flash'),
       system: SYSTEM_PROMPT,
       messages: currentMessages,
       tools: {
