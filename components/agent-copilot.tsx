@@ -28,6 +28,122 @@ function parseMessageContent(content: any) {
   return { text: content, suggestions: [] }
 }
 
+function renderInlineFormatting(rawText: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = []
+  let remaining = rawText
+  let key = 0
+
+  // Match **bold**, *italic*, `code`
+  const tokenRegex = /(\*\*.*?\*\*|\*.*?\*|`.*?`)/
+
+  while (remaining.length > 0) {
+    const match = remaining.match(tokenRegex)
+    if (!match || match.index === undefined) {
+      // Strip any stray asterisks
+      const clean = remaining.replace(/\*\*/g, '')
+      parts.push(clean)
+      break
+    }
+
+    if (match.index > 0) {
+      const before = remaining.slice(0, match.index).replace(/\*\*/g, '')
+      parts.push(before)
+    }
+
+    const token = match[0]
+    if (token.startsWith('**') && token.endsWith('**')) {
+      const inner = token.slice(2, -2).replace(/\*\*/g, '')
+      parts.push(
+        <strong key={`b-${key++}`} className="font-semibold text-foreground">
+          {inner}
+        </strong>
+      )
+    } else if (token.startsWith('*') && token.endsWith('*')) {
+      const inner = token.slice(1, -1).replace(/\*/g, '')
+      parts.push(
+        <span key={`i-${key++}`} className="italic text-muted-foreground">
+          {inner}
+        </span>
+      )
+    } else if (token.startsWith('`') && token.endsWith('`')) {
+      const inner = token.slice(1, -1)
+      parts.push(
+        <code key={`c-${key++}`} className="bg-background/80 text-foreground px-1 py-0.5 rounded text-xs font-mono border border-border/50">
+          {inner}
+        </code>
+      )
+    }
+
+    remaining = remaining.slice(match.index + token.length)
+  }
+
+  return parts
+}
+
+function FormattedMessage({ content }: { content: string }) {
+  const lines = content.split('\n')
+  const elements: React.ReactNode[] = []
+  let currentListItems: React.ReactNode[] = []
+  let key = 0
+
+  const flushList = () => {
+    if (currentListItems.length > 0) {
+      elements.push(
+        <div key={`list-${key++}`} className="flex flex-col gap-1 my-1.5 pl-0.5">
+          {currentListItems}
+        </div>
+      )
+      currentListItems = []
+    }
+  }
+
+  lines.forEach((line) => {
+    const trimmed = line.trim()
+    
+    if (!trimmed) {
+      flushList()
+      elements.push(<div key={`sp-${key++}`} className="h-1.5" />)
+      return
+    }
+
+    // Bullet items: starts with • or - or *
+    if (trimmed.startsWith('•') || trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      const itemText = trimmed.replace(/^[•\-\*]\s*/, '').trim()
+      currentListItems.push(
+        <div key={`item-${key++}`} className="flex items-start gap-2 text-sm leading-snug">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary/70 mt-1.5 flex-shrink-0" />
+          <div className="flex-1">{renderInlineFormatting(itemText)}</div>
+        </div>
+      )
+      return
+    }
+
+    flushList()
+
+    // Header / Title line (starts with emoji or markdown header #)
+    const isHeader = /^([📊⚠️✅📦🔍🎉📋👋🤖🛒💊⚡🏷️🗑️❌ℹ️👉]|#{1,3}\s)/.test(trimmed)
+    if (isHeader) {
+      elements.push(
+        <div key={`hd-${key++}`} className="font-semibold text-sm text-foreground flex items-center gap-1.5 pt-0.5 pb-0.5">
+          {renderInlineFormatting(trimmed)}
+        </div>
+      )
+      return
+    }
+
+    // Normal paragraph
+    elements.push(
+      <p key={`p-${key++}`} className="text-sm leading-relaxed text-foreground/90">
+        {renderInlineFormatting(trimmed)}
+      </p>
+    )
+  })
+
+  flushList()
+
+  return <div className="space-y-1">{elements}</div>
+}
+
 export function AgentCopilot() {
   const [open, setOpen] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -191,8 +307,12 @@ export function AgentCopilot() {
                           </div>
                         </div>
                       )}
-                      <div className="whitespace-pre-wrap text-sm leading-relaxed pt-0.5">
-                        {text}
+                      <div className="text-sm leading-relaxed pt-0.5">
+                        {msg.role === 'assistant' ? (
+                          <FormattedMessage content={text} />
+                        ) : (
+                          <div className="whitespace-pre-wrap">{text}</div>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -230,12 +230,12 @@ async function handleRevenueQuery(supabase: any): Promise<string> {
 
     return `📊 **Today's Financial Summary (${format(new Date(), 'dd MMM yyyy')})**
 
-• **Today's Revenue:** **${formatNGN(todayTotal)}**
-• **Completed Sales:** **${todayCount} transaction${todayCount === 1 ? '' : 's'}**
-• **Average Transaction Value:** **${formatNGN(avgBasket)}**
-• **Lifetime Store Revenue:** **${formatNGN(lifetimeTotal)}** (${lifetimeCount} orders)
+• **Today's Revenue:** ${formatNGN(todayTotal)}
+• **Completed Sales:** ${todayCount} transaction${todayCount === 1 ? '' : 's'}
+• **Average Sale:** ${formatNGN(avgBasket)}
+• **Lifetime Revenue:** ${formatNGN(lifetimeTotal)} (${lifetimeCount} orders)
 
-${todayCount === 0 ? 'ℹ️ *No in-store or online sales have been confirmed yet today.*' : '✅ *All revenue recorded from completed in-store POS and storefront orders.*'}
+${todayCount === 0 ? 'ℹ️ No in-store or online sales have been confirmed yet today.' : '✅ All revenue recorded from completed in-store POS and storefront orders.'}
 
 SUGGESTIONS:
 - Which drugs are low on stock?
@@ -281,12 +281,12 @@ async function handleLowStockQuery(supabase: any): Promise<string> {
 
     const itemsList = lowStockItems
       .slice(0, 8)
-      .map(item => `• **${item.name} (${item.dose})**: **${item.available}** units remaining *(Threshold: ${item.threshold})*`)
+      .map(item => `• **${item.name} (${item.dose})**: ${item.available} units remaining (Threshold: ${item.threshold})`)
       .join('\n')
 
     const firstDrug = lowStockItems[0]?.name || 'a drug'
 
-    return `⚠️ **Low Stock Warning: ${lowStockItems.length} Item(s) Need Reorder**\n\n${itemsList}\n\n${lowStockItems.length > 8 ? `*...and ${lowStockItems.length - 8} more item(s)*\n\n` : ''}👉 *You can restock any item directly by saying "Restock ${firstDrug} by 100 units".*\n\nSUGGESTIONS:\n- Restock ${firstDrug} by 100 units\n- What's the revenue for today?\n- View drug catalog`
+    return `⚠️ **Low Stock Warning: ${lowStockItems.length} Item(s) Need Reorder**\n\n${itemsList}\n\n${lowStockItems.length > 8 ? `*...and ${lowStockItems.length - 8} more item(s)*\n\n` : ''}👉 Restock any item directly by saying: *"Restock ${firstDrug} by 100 units"*\n\nSUGGESTIONS:\n- Restock ${firstDrug} by 100 units\n- What's the revenue for today?\n- View drug catalog`
   } catch (err: any) {
     return `⚠️ Could not check stock levels: ${err.message}\n\nSUGGESTIONS:\n- Which drugs are low on stock?\n- View drug catalog\n- Help`
   }
@@ -315,7 +315,7 @@ async function handleOrdersQuery(supabase: any): Promise<string> {
       return `• **Order #${o.id.slice(0, 6)}** (${o.customer_name || 'Customer'}): ${formatNGN(Number(o.total_amount || 0))} — Status: **${st}** (${itemsCount} item${itemsCount > 1 ? 's' : ''})`
     }).join('\n')
 
-    return `📦 **Storefront OTC Orders Summary**\n\n• **Pending Review:** **${pending}**\n• **Ready for Pickup:** **${ready}**\n• **Out for Delivery:** **${outForDelivery}**\n• **Completed:** **${completed}**\n\n**Recent Orders:**\n${recentList}\n\nSUGGESTIONS:\n- What's the revenue for today?\n- Which drugs are low on stock?\n- View drug catalog`
+    return `📦 **Storefront OTC Orders Summary**\n\n• **Pending Review:** ${pending}\n• **Ready for Pickup:** ${ready}\n• **Out for Delivery:** ${outForDelivery}\n• **Completed:** ${completed}\n\n**Recent Orders:**\n${recentList}\n\nSUGGESTIONS:\n- What's the revenue for today?\n- Which drugs are low on stock?\n- View drug catalog`
   } catch (err: any) {
     return `⚠️ Could not fetch OTC orders: ${err.message}\n\nSUGGESTIONS:\n- What's the revenue for today?\n- View drug catalog\n- Help`
   }
@@ -352,14 +352,14 @@ async function handleDrugSearch(supabase: any, text: string): Promise<string> {
       const otc = d.otc_listings && d.otc_listings[0]
       const otcPrice = otc?.price_override ? formatNGN(otc.price_override) : price
 
-      return `💊 **Drug Details: ${d.name} ${d.dose}**
+      return `💊 **${d.name} ${d.dose}**
 
-• **Form:** ${d.form} | **Pack Size:** ${d.pack_size || 1}
+• **Form:** ${d.form} (Pack Size: ${d.pack_size || 1})
 • **Category:** ${d.category}
-• **Status:** ${d.is_active ? '✅ Active' : '⏸️ Archived'}
-• **Total Available Stock:** **${totalStock} units**
-• **In-Store Selling Price:** **${price}**
-• **Storefront Listed:** ${otc?.is_listed ? `✅ Listed (Online Price: **${otcPrice}**)` : '❌ Not Listed'}
+• **Status:** ${d.is_active ? 'Active' : 'Archived'}
+• **Available Stock:** ${totalStock} units
+• **In-Store Price:** ${price}
+• **Storefront:** ${otc?.is_listed ? `Listed (${otcPrice})` : 'Not Listed'}
 • **Active Batches:** ${(d.batches || []).length} batch(es)
 
 SUGGESTIONS:
@@ -462,13 +462,13 @@ SUGGESTIONS:
     text: `⚠️ **Confirmation Required: Add New Drug**
 
 I am ready to insert the following drug into the catalog:
-• **Drug Name:** **${name}**
-• **Dose:** **${dose}**
-• **Form:** **${form}**
-• **Pack Size:** **${packSize}**
-• **Category:** **${category}**
+• **Drug Name:** ${name}
+• **Dose:** ${dose}
+• **Form:** ${form}
+• **Pack Size:** ${packSize}
+• **Category:** ${category}
 
-👉 Reply **YES** or **CONFIRM** to save this drug to the database, or **CANCEL** to abort.
+👉 Reply **YES** or **CONFIRM** to save, or **CANCEL** to abort.
 
 SUGGESTIONS:
 - Yes, confirm
@@ -553,12 +553,12 @@ SUGGESTIONS:
     text: `⚠️ **Confirmation Required: Restock Inventory**
 
 I am ready to add this new inventory batch:
-• **Drug:** **${targetDrug.name} ${targetDrug.dose}**
-• **Quantity:** **${quantity} units**
-• **Selling Price:** **${formatNGN(sellingPrice)} / unit**
-• **Cost Price:** **${formatNGN(costPrice)} / unit**
+• **Drug:** ${targetDrug.name} ${targetDrug.dose}
+• **Quantity:** ${quantity} units
+• **Selling Price:** ${formatNGN(sellingPrice)} / unit
+• **Cost Price:** ${formatNGN(costPrice)} / unit
 • **Batch Number:** \`${batchNumber}\`
-• **Expiry Date:** **${expiryDate}** (1 year)
+• **Expiry Date:** ${expiryDate} (1 year)
 
 👉 Reply **YES** or **CONFIRM** to record this batch in inventory, or **CANCEL** to abort.
 
@@ -620,9 +620,9 @@ SUGGESTIONS:
     text: `⚠️ **Confirmation Required: Storefront Price Override**
 
 I am ready to update the public OTC online price:
-• **Drug:** **${drug.name} ${drug.dose}**
-• **New Online Price:** **${formatNGN(newPrice)}**
-• **Storefront Status:** Will be listed publicly
+• **Drug:** ${drug.name} ${drug.dose}
+• **New Online Price:** ${formatNGN(newPrice)}
+• **Storefront Status:** Active
 
 👉 Reply **YES** or **CONFIRM** to apply this price override, or **CANCEL** to abort.
 
@@ -670,7 +670,7 @@ async function handleArchiveIntent(supabase: any, text: string): Promise<{ text:
     text: `⚠️ **Confirmation Required: Archive Drug**
 
 Are you sure you want to archive this drug?
-• **Drug:** **${drug.name} ${drug.dose}**
+• **Drug:** ${drug.name} ${drug.dose}
 • **Effect:** Drug will become inactive and will no longer appear in POS search or online.
 
 👉 Reply **YES** or **CONFIRM** to deactivate this drug, or **CANCEL** to abort.
@@ -713,9 +713,9 @@ async function executeConfirmedAction(supabase: any, userId: string, action: Pen
 
         return `🎉 **Success! Drug Added to Catalog**
 
-• **Name:** **${newDrug.name} ${newDrug.dose}**
-• **Form:** **${newDrug.form}** (Pack Size: ${newDrug.pack_size})
-• **Category:** **${newDrug.category}**
+• **Name:** ${newDrug.name} ${newDrug.dose}
+• **Form:** ${newDrug.form} (Pack Size: ${newDrug.pack_size})
+• **Category:** ${newDrug.category}
 • **ID:** \`${newDrug.id}\`
 
 The medication is now live in your catalog. You can now restock inventory batches for it.
@@ -751,11 +751,11 @@ SUGGESTIONS:
 
         return `🎉 **Success! Batch Received & Stocked**
 
-• **Drug:** **${drug_name} ${dose}**
-• **Quantity Added:** **${newBatch.quantity_received} units**
+• **Drug:** ${drug_name} ${dose}
+• **Quantity Added:** ${newBatch.quantity_received} units
 • **Batch Number:** \`${newBatch.batch_number}\`
-• **Selling Price:** **${formatNGN(newBatch.selling_price_per_unit)}**
-• **Expiry Date:** **${newBatch.expiry_date}**
+• **Selling Price:** ${formatNGN(newBatch.selling_price_per_unit)}
+• **Expiry Date:** ${newBatch.expiry_date}
 
 Your inventory has been updated immediately across POS and Storefront.
 
@@ -789,8 +789,8 @@ SUGGESTIONS:
 
         return `🎉 **Success! Storefront Price Updated**
 
-• **Drug:** **${drug_name} ${dose}**
-• **New Online Price:** **${formatNGN(price_override)}**
+• **Drug:** ${drug_name} ${dose}
+• **New Online Price:** ${formatNGN(price_override)}
 • **Storefront Visibility:** Active
 
 Customers on the public storefront will now see and be charged this updated price.
