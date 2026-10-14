@@ -16,7 +16,8 @@ export type StorefrontSettings = {
   color_secondary: string | null
   delivery_fee: number
   pcn_licence_number: string | null
-  display_pcn: boolean
+  pcn_registration_number: string | null
+  show_pcn_licence: boolean
 }
 
 export async function getStorefrontSettings(): Promise<StorefrontSettings | null> {
@@ -39,6 +40,20 @@ export async function getStorefrontSettings(): Promise<StorefrontSettings | null
 export async function updateStorefrontSettings(updates: Partial<StorefrontSettings>) {
   const supabase = await createClient()
   
+  // Verify admin on server
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  
+  const { data: appUser } = await supabase
+    .from('app_users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+    
+  if (!appUser || appUser.role !== 'admin') {
+    throw new Error('Unauthorized: Admin access required')
+  }
+
   const { error } = await supabase
     .from('storefront_settings')
     .update(updates)

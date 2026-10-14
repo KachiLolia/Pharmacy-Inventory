@@ -146,13 +146,14 @@ export function SettingsForm({ settings }: { settings: StorefrontSettings }) {
               </p>
             </div>
             <Switch
-              checked={formData.display_pcn}
-              onCheckedChange={handleSwitchChange('display_pcn')}
+              checked={formData.show_pcn_licence}
+              onCheckedChange={handleSwitchChange('show_pcn_licence')}
             />
           </div>
           
-          {formData.display_pcn && (
-            <div className="space-y-2 pt-2">
+          {formData.show_pcn_licence && (
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
               <Label htmlFor="pcn_licence_number" className="text-amber-900">Licence Number</Label>
               <Input 
                 id="pcn_licence_number" 
@@ -162,6 +163,18 @@ export function SettingsForm({ settings }: { settings: StorefrontSettings }) {
                 placeholder="e.g. PCN-EP-2026-..." 
                 className="border-amber-200 focus-visible:ring-amber-500"
               />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="pcn_registration_number" className="text-amber-900">Provider Registration Number</Label>
+                <Input 
+                  id="pcn_registration_number" 
+                  name="pcn_registration_number" 
+                  value={formData.pcn_registration_number || ''} 
+                  onChange={handleChange} 
+                  placeholder="e.g. PRN-1234..." 
+                  className="border-amber-200 focus-visible:ring-amber-500"
+                />
+              </div>
             </div>
           )}
         </CardContent>
