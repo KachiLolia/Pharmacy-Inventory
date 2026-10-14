@@ -21,7 +21,8 @@ export default async function SiteSettingsPage() {
     color_secondary: '#ffffff',
     delivery_fee: 1500,
     pcn_licence_number: '',
-    display_pcn: false
+    pcn_registration_number: '',
+    show_pcn_licence: false
   }
 
   return (
