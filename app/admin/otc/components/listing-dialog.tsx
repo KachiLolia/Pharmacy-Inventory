@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
@@ -14,6 +14,7 @@ import {
   uploadOTCImage, 
   deleteOTCImage 
 } from '@/app/actions/otc'
+import { createClient as createBrowserClient } from '@/lib/supabase/client'
 import { 
   UploadCloud, 
   Trash2, 
@@ -74,22 +75,89 @@ export function ListingDialog({ drug, listing }: { drug: DrugWithListing, listin
           throw new Error(`"${file.name}" exceeds the 5MB file limit.`)
         }
 
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('drugId', drug.id)
+        let uploadedUrl: string | null = null
 
-        const res = await uploadOTCImage(formData)
-        if (!res.success || !res.url) {
-          throw new Error(res.error || `Failed to upload ${file.name}`)
+        // Strategy 1: Direct client upload to Supabase Storage
+        try {
+          const supabase = createBrowserClient()
+          if (supabase && (supabase as any).storage) {
+            const ext = file.name.split('.').pop() || 'jpg'
+            const cleanExt = ext.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'jpg'
+            const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${cleanExt}`
+            const filePath = `drugs/${drug.id}/${fileName}`
+
+            const { data, error } = await supabase.storage
+              .from('otc_images')
+              .upload(filePath, file, {
+                contentType: file.type || 'image/jpeg',
+                upsert: true,
+              })
+
+            if (!error && data) {
+              const { data: urlData } = supabase.storage
+                .from('otc_images')
+                .getPublicUrl(filePath)
+              if (urlData?.publicUrl) {
+                uploadedUrl = urlData.publicUrl
+              }
+            }
+          }
+        } catch (directErr) {
+          console.warn('Direct upload skipped, falling back to API route:', directErr)
         }
 
-        newUrls.push(res.url)
+        // Strategy 2: Upload via dedicated API route (/api/otc/upload)
+        if (!uploadedUrl) {
+          try {
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('drugId', drug.id)
+
+            const apiRes = await fetch('/api/otc/upload', {
+              method: 'POST',
+              body: formData,
+            })
+
+            if (apiRes.ok) {
+              const result = await apiRes.json()
+              if (result.success && result.url) {
+                uploadedUrl = result.url
+              } else if (result.error) {
+                console.warn('API route upload error:', result.error)
+              }
+            }
+          } catch (apiErr) {
+            console.warn('API route attempt failed, trying server action:', apiErr)
+          }
+        }
+
+        // Strategy 3: Server Action fallback
+        if (!uploadedUrl) {
+          const formData = new FormData()
+          formData.append('file', file)
+          formData.append('drugId', drug.id)
+
+          const res = await uploadOTCImage(formData)
+          if (res.success && res.url) {
+            uploadedUrl = res.url
+          } else {
+            throw new Error(res.error || `Failed to upload ${file.name}`)
+          }
+        }
+
+        if (uploadedUrl) {
+          newUrls.push(uploadedUrl)
+        }
       }
 
       setImages((prev) => [...prev, ...newUrls])
     } catch (err: any) {
-      console.error(err)
-      setErrorMsg(err.message || 'Failed to upload image(s).')
+      console.error('Upload error in dialog:', err)
+      let msg = err.message || 'Failed to upload image(s).'
+      if (msg.includes('441') || msg.includes('Minified React error')) {
+        msg = 'Upload failed. The image might exceed Vercel limits or the storage key is missing. You can paste an image URL directly using "Or add image via external URL".'
+      }
+      setErrorMsg(msg)
     } finally {
       setUploading(false)
       if (fileInputRef.current) {
@@ -161,7 +229,11 @@ export function ListingDialog({ drug, listing }: { drug: DrugWithListing, listin
       setOpen(false)
     } catch (error: any) {
       console.error(error)
-      setErrorMsg(error.message || "Failed to update listing")
+      let msg = error.message || "Failed to update listing"
+      if (msg.includes('441') || msg.includes('Minified React error')) {
+        msg = "Failed to update listing on server. Please check your network and try again."
+      }
+      setErrorMsg(msg)
     } finally {
       setLoading(false)
     }

@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -107,7 +107,19 @@ export async function uploadOTCImage(formData: FormData): Promise<{ success: boo
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    const supabase = await createAdminClient()
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    let supabase: any
+    if (serviceRoleKey && supabaseUrl) {
+      const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
+      supabase = createSupabaseClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false }
+      })
+    } else {
+      supabase = await createClient()
+    }
+
     const { error: uploadError } = await supabase.storage
       .from('otc_images')
       .upload(filePath, buffer, {
@@ -137,7 +149,17 @@ export async function deleteOTCImage(imageUrl: string): Promise<{ success: boole
       const parts = imageUrl.split('/otc_images/')
       if (parts.length > 1) {
         const filePath = decodeURIComponent(parts[1].split('?')[0])
-        const supabase = await createAdminClient()
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+        let supabase: any
+        if (serviceRoleKey && supabaseUrl) {
+          const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
+          supabase = createSupabaseClient(supabaseUrl, serviceRoleKey, {
+            auth: { autoRefreshToken: false, persistSession: false }
+          })
+        } else {
+          supabase = await createClient()
+        }
         await supabase.storage.from('otc_images').remove([filePath])
       }
     }
