@@ -1,8 +1,8 @@
-'use server'
+﻿'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { Drug } from '@/lib/types' // I might need to adjust imports
+import { Drug } from '@/lib/types'
 
 export type OTCListing = {
   id: string
@@ -37,7 +37,6 @@ export async function getOTCListings(): Promise<DrugWithListing[]> {
     .select('*')
 
   if (listingsError) {
-    // Note: if the table doesn't exist yet, this will error. 
     console.error('Error fetching listings:', listingsError)
     return drugs as DrugWithListing[]
   }
@@ -63,7 +62,10 @@ export async function upsertOTCListing(drugId: string, updates: Partial<OTCListi
   if (existing) {
     const { error } = await supabase
       .from('otc_listings')
-      .update(updates)
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
       .eq('drug_id', drugId)
     if (error) throw new Error(error.message)
   } else {
@@ -78,4 +80,70 @@ export async function upsertOTCListing(drugId: string, updates: Partial<OTCListi
 
 export async function toggleListing(drugId: string, listed: boolean) {
   return upsertOTCListing(drugId, { listed })
+}
+
+export async function uploadOTCImage(formData: FormData): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    const file = formData.get('file') as File | null
+    if (!file) {
+      return { success: false, error: 'No image file provided.' }
+    }
+
+    if (!file.type.startsWith('image/')) {
+      return { success: false, error: 'File must be an image (PNG, JPG, WEBP, etc.).' }
+    }
+
+    // Limit to 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      return { success: false, error: 'Image size exceeds the 5MB limit.' }
+    }
+
+    const drugId = (formData.get('drugId') as string) || 'general'
+    const ext = file.name.split('.').pop() || 'jpg'
+    const cleanExt = ext.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'jpg'
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${cleanExt}`
+    const filePath = `drugs/${drugId}/${fileName}`
+
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    const supabase = await createAdminClient()
+    const { error: uploadError } = await supabase.storage
+      .from('otc_images')
+      .upload(filePath, buffer, {
+        contentType: file.type || 'image/jpeg',
+        upsert: true,
+      })
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError)
+      return { success: false, error: uploadError.message }
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('otc_images')
+      .getPublicUrl(filePath)
+
+    return { success: true, url: urlData.publicUrl }
+  } catch (err: any) {
+    console.error('Upload error:', err)
+    return { success: false, error: err.message || 'Failed to upload image.' }
+  }
+}
+
+export async function deleteOTCImage(imageUrl: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (imageUrl.includes('/otc_images/')) {
+      const parts = imageUrl.split('/otc_images/')
+      if (parts.length > 1) {
+        const filePath = decodeURIComponent(parts[1].split('?')[0])
+        const supabase = await createAdminClient()
+        await supabase.storage.from('otc_images').remove([filePath])
+      }
+    }
+    return { success: true }
+  } catch (err: any) {
+    console.error('Failed to delete image from storage:', err)
+    return { success: false, error: err.message }
+  }
 }
