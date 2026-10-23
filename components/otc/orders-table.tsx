@@ -17,20 +17,10 @@ import {
 } from "@/components/ui/dialog"
 
 function OrderStatusBadge({ status }: { status: OTCOrder['order_status'] }) {
-  const map: Record<string, { label: string, variant: 'default' | 'secondary' | 'destructive' | 'outline' | 'warning' | 'success' }> = {
-    pending: { label: 'Pending', variant: 'warning' },
-    processing: { label: 'Processing', variant: 'secondary' },
-    ready_for_pickup: { label: 'Ready for Pickup', variant: 'default' },
-    out_for_delivery: { label: 'Out for Delivery', variant: 'default' },
-    completed: { label: 'Completed', variant: 'success' },
-    cancelled: { label: 'Cancelled', variant: 'destructive' },
+  if (status === 'completed') {
+    return <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white">Completed</Badge>
   }
-  const config = map[status] || { label: status, variant: 'outline' }
-  // Using standard shadcn variants, falling back for custom ones
-  return <Badge variant={config.variant as any} className={
-    config.variant === 'warning' ? 'bg-amber-500 hover:bg-amber-600 text-white' :
-    config.variant === 'success' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : ''
-  }>{config.label}</Badge>
+  return <Badge variant="secondary">Processing</Badge>
 }
 
 export function OrdersTable({ orders, role }: { orders: OTCOrder[], role: 'admin' | 'staff' }) {
@@ -113,20 +103,16 @@ export function OrdersTable({ orders, role }: { orders: OTCOrder[], role: 'admin
                           <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                         ) : null}
                         <Select 
-                          value={order.order_status} 
+                          value={order.order_status === 'completed' ? 'completed' : 'processing'} 
                           onValueChange={(val) => handleStatusChange(order.id as string, val as string)}
-                          disabled={updating === order.id || order.order_status === 'completed' || order.order_status === 'cancelled'}
+                          disabled={updating === order.id || order.order_status === 'completed'}
                         >
                           <SelectTrigger className="h-8 w-[140px] text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
                             <SelectItem value="processing">Processing</SelectItem>
-                            <SelectItem value="ready_for_pickup">Ready for Pickup</SelectItem>
-                            <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
                             <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
