@@ -50,7 +50,7 @@ export function ReceiptPrinter({ prescription, items, drugs, visible = false }: 
         </div>
         <div className="flex justify-between">
           <span>Cashier:</span>
-          <span>{prescription.created_by.slice(0, 8)}</span>
+          <span>{prescription.payment_method === 'online' ? 'Storefront (Online)' : (prescription.created_by?.slice(0, 8) || 'Staff')}</span>
         </div>
       </div>
 
@@ -106,7 +106,7 @@ export function ReceiptPrinter({ prescription, items, drugs, visible = false }: 
 
         <div className="flex justify-between pt-1">
           <span>Payment Method:</span>
-          <span className="capitalize">{prescription.payment_method || 'N/A'}</span>
+          <span className="capitalize">{prescription.payment_method === 'online' ? 'Online' : (prescription.payment_method || 'N/A')}</span>
         </div>
         <div className="flex justify-between">
           <span>Status:</span>

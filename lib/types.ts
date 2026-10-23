@@ -46,7 +46,7 @@ export type Drug = {
 
 export type PrescriptionStatus = 'pending' | 'completed' | 'cancelled'
 export type RefundStatus = 'none' | 'partial' | 'full'
-export type PaymentMethod = 'cash' | 'card' | 'transfer' | null
+export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'online' | null
 
 export type Prescription = {
   id: string

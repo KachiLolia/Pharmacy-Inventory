@@ -15,12 +15,18 @@ export type OTCListing = {
 
 export type DrugWithListing = Drug & {
   listing?: OTCListing
+  total_stock: number
+  available_stock: number
+  has_expired_batches: boolean
+  is_out_of_stock: boolean
+  is_low_stock: boolean
+  live_batch_price?: number
 }
 
 export async function getOTCListings(): Promise<DrugWithListing[]> {
   const supabase = await createClient()
 
-  // First fetch all drugs
+  // 1. Fetch all drugs
   const { data: drugs, error: drugsError } = await supabase
     .from('drugs')
     .select('*')
@@ -31,22 +37,79 @@ export async function getOTCListings(): Promise<DrugWithListing[]> {
     return []
   }
 
-  // Fetch listings
+  // 2. Fetch listings
   const { data: listings, error: listingsError } = await supabase
     .from('otc_listings')
     .select('*')
 
   if (listingsError) {
     console.error('Error fetching listings:', listingsError)
-    return drugs as DrugWithListing[]
   }
 
-  const listingsMap = new Map(listings.map((l: any) => [l.drug_id, l]))
+  // 3. Fetch batches to sync real-time physical inventory & expiry state
+  const { data: batches, error: batchesError } = await supabase
+    .from('batches')
+    .select('drug_id, quantity_remaining, expiry_date, selling_price_per_unit')
 
-  return (drugs as Drug[]).map((drug) => ({
-    ...drug,
-    listing: listingsMap.get(drug.id) as OTCListing | undefined
-  }))
+  if (batchesError) {
+    console.error('Error fetching batches for OTC listings:', batchesError)
+  }
+
+  const listingsMap = new Map((listings || []).map((l: any) => [l.drug_id, l]))
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  // Group batches by drug_id
+  const batchesByDrug = new Map<string, any[]>()
+  for (const b of (batches || [])) {
+    const list = batchesByDrug.get(b.drug_id) || []
+    list.push(b)
+    batchesByDrug.set(b.drug_id, list)
+  }
+
+  return (drugs as Drug[]).map((drug) => {
+    const drugBatches = batchesByDrug.get(drug.id) || []
+
+    let totalStock = 0
+    let availableStock = 0
+    let hasExpiredBatches = false
+    let earliestActivePrice: number | undefined = undefined
+    let earliestExpiry: Date | null = null
+
+    for (const b of drugBatches) {
+      totalStock += b.quantity_remaining
+      const exp = new Date(b.expiry_date)
+      if (exp >= today) {
+        if (b.quantity_remaining > 0) {
+          availableStock += b.quantity_remaining
+          if (!earliestExpiry || exp < earliestExpiry) {
+            earliestExpiry = exp
+            earliestActivePrice = b.selling_price_per_unit
+          }
+        }
+      } else {
+        if (b.quantity_remaining > 0) {
+          hasExpiredBatches = true
+        }
+      }
+    }
+
+    const lowStockThreshold = drug.low_stock_threshold ?? 10
+    const isOutOfStock = availableStock <= 0
+    const isLowStock = availableStock > 0 && availableStock <= lowStockThreshold
+
+    return {
+      ...drug,
+      listing: listingsMap.get(drug.id) as OTCListing | undefined,
+      total_stock: totalStock,
+      available_stock: availableStock,
+      has_expired_batches: hasExpiredBatches,
+      is_out_of_stock: isOutOfStock,
+      is_low_stock: isLowStock,
+      live_batch_price: earliestActivePrice
+    }
+  })
 }
 
 export async function upsertOTCListing(drugId: string, updates: Partial<OTCListing>) {

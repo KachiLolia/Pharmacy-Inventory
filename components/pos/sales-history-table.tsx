@@ -66,7 +66,8 @@ export function SalesHistoryTable({ sales, drugs, isAdmin = false }: SalesHistor
       const query = searchQuery.toLowerCase()
       const matchesReceipt = sale.receipt_number?.toLowerCase().includes(query)
       const matchesAmount = sale.total_amount.toString().includes(query)
-      if (!matchesReceipt && !matchesAmount) return false
+      const matchesMethod = sale.payment_method?.toLowerCase().includes(query)
+      if (!matchesReceipt && !matchesAmount && !matchesMethod) return false
     }
 
     if (!startDate && !endDate) return true
@@ -92,8 +93,8 @@ export function SalesHistoryTable({ sales, drugs, isAdmin = false }: SalesHistor
     const rows = filteredSales.map(s => [
       `"${new Date(s.confirmed_at || s.created_at).toLocaleString()}"`,
       s.receipt_number || 'N/A',
-      s.created_by,
-      s.payment_method || 'N/A',
+      s.payment_method === 'online' ? 'Online Store' : s.created_by,
+      s.payment_method === 'online' ? 'Online' : (s.payment_method || 'N/A'),
       s.total_amount.toFixed(2)
     ])
     
@@ -207,11 +208,24 @@ export function SalesHistoryTable({ sales, drugs, isAdmin = false }: SalesHistor
                         <TableCell className="font-mono text-xs font-medium">
                           {sale.receipt_number || 'N/A'}
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground truncate max-w-[120px]">
-                          {sale.created_by}
+                        <TableCell className="text-sm text-muted-foreground truncate max-w-[140px]">
+                          {sale.payment_method === 'online' ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                              Online Store
+                            </span>
+                          ) : (
+                            sale.created_by
+                          )}
                         </TableCell>
-                        <TableCell className="text-sm capitalize">
-                          {sale.payment_method || 'N/A'}
+                        <TableCell className="text-sm">
+                          {sale.payment_method === 'online' ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50/90 px-2.5 py-1 rounded-full border border-emerald-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              Online
+                            </span>
+                          ) : (
+                            <span className="capitalize">{sale.payment_method || 'N/A'}</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right font-bold">
                           ₦{sale.total_amount.toFixed(2)}
@@ -256,9 +270,11 @@ export function SalesHistoryTable({ sales, drugs, isAdmin = false }: SalesHistor
                         <div className="text-xs font-mono font-medium bg-muted px-2 py-1 rounded-md">
                           {sale.receipt_number || 'N/A'}
                         </div>
-                        <div className="text-xs text-muted-foreground capitalize mt-2 flex justify-end gap-1 items-center">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 block"></span>
-                          {sale.payment_method || 'N/A'}
+                        <div className="text-xs text-muted-foreground capitalize mt-2 flex justify-end gap-1.5 items-center">
+                          <span className={`w-2 h-2 rounded-full block ${sale.payment_method === 'online' ? 'bg-emerald-500' : 'bg-primary'}`}></span>
+                          <span className={sale.payment_method === 'online' ? 'font-semibold text-emerald-700' : ''}>
+                            {sale.payment_method === 'online' ? 'Online' : (sale.payment_method || 'N/A')}
+                          </span>
                         </div>
                       </div>
                     </div>

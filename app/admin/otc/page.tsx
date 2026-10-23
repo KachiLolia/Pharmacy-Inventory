@@ -1,4 +1,4 @@
-﻿import { getOTCListings } from '@/app/actions/otc'
+import { getOTCListings } from '@/app/actions/otc'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { SearchInput } from '@/components/ui/search-input'
@@ -51,6 +51,7 @@ export default async function AdminOTCPage({
                 <TableHead className="font-semibold text-foreground">Drug & Image</TableHead>
                 <TableHead className="font-semibold text-foreground">Category</TableHead>
                 <TableHead className="font-semibold text-foreground">Public Status</TableHead>
+                <TableHead className="font-semibold text-foreground">Live Stock Sync</TableHead>
                 <TableHead className="font-semibold text-foreground">Online Price</TableHead>
                 <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
               </TableRow>
@@ -106,9 +107,41 @@ export default async function AdminOTCPage({
                       )}
                     </TableCell>
                     <TableCell>
+                      {drug.is_out_of_stock ? (
+                        <div>
+                          <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-xs font-semibold">
+                            Out of Stock (0)
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground block mt-0.5">Online: 'Out of Stock'</span>
+                        </div>
+                      ) : drug.is_low_stock ? (
+                        <div>
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs font-medium">
+                            Low Stock ({drug.available_stock} left)
+                          </Badge>
+                          {drug.has_expired_batches && (
+                            <span className="text-[10px] text-destructive block mt-0.5">Expired batches excluded</span>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-medium">
+                            {drug.available_stock} in stock
+                          </Badge>
+                          {drug.has_expired_batches && (
+                            <span className="text-[10px] text-destructive block mt-0.5">Expired batches excluded</span>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       {listing?.price_override ? (
                         <div className="font-medium text-primary">
                           ₦{listing.price_override.toLocaleString(undefined, {minimumFractionDigits: 2})} <span className="text-[10px] text-muted-foreground font-normal">(Override)</span>
+                        </div>
+                      ) : drug.live_batch_price ? (
+                        <div className="font-medium text-foreground">
+                          ₦{drug.live_batch_price.toLocaleString(undefined, {minimumFractionDigits: 2})} <span className="text-[10px] text-muted-foreground font-normal">(Live Batch)</span>
                         </div>
                       ) : (
                         <div className="text-muted-foreground text-sm italic">Auto (Live Price)</div>
@@ -124,7 +157,7 @@ export default async function AdminOTCPage({
               })}
               {filteredDrugs.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
                     No drugs found matching your search.
                   </TableCell>
                 </TableRow>
@@ -190,8 +223,31 @@ export default async function AdminOTCPage({
                       <span className="font-semibold text-primary">
                         ₦{listing.price_override.toLocaleString(undefined, {minimumFractionDigits: 2})} (Override)
                       </span>
+                    ) : drug.live_batch_price ? (
+                      <span className="font-semibold text-foreground">
+                        ₦{drug.live_batch_price.toLocaleString(undefined, {minimumFractionDigits: 2})} (Live Batch)
+                      </span>
                     ) : (
                       <span className="italic text-muted-foreground">Auto (Live Batch)</span>
+                    )}
+                  </div>
+
+                  <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                    {drug.is_out_of_stock ? (
+                      <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[10px] py-0">
+                        Out of Stock (0)
+                      </Badge>
+                    ) : drug.is_low_stock ? (
+                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] py-0">
+                        Low Stock ({drug.available_stock} left)
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] py-0">
+                        {drug.available_stock} in stock
+                      </Badge>
+                    )}
+                    {drug.has_expired_batches && (
+                      <span className="text-[10px] text-destructive font-medium">Expired batches excluded</span>
                     )}
                   </div>
                 </div>
